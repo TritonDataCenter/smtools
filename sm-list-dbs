@@ -1,0 +1,93 @@
+#!/usr/bin/bash
+#
+# List MySQL/PostgreSQL databases for a SmartMachine.
+# Joyent 2012.
+
+usage() {
+cat << EOF
+
+Usage: $0 [options] TYPE
+
+Arguments:
+    
+    TYPE             Type of database: mysql or postgresql.
+
+Options:
+    
+    -u               Username to access database.  [use portal credentials]
+    -p               Password to access database.  [use portal credentials]
+
+EOF
+exit 2;
+}
+
+while getopts "u:p:" OPTION; do
+	case $OPTION in
+		u)
+			DB_USER=$OPTARG;
+			;;
+		p)
+			DB_PASS=$OPTARG;
+			;;
+		*)
+			usage;
+			;;
+	esac
+done
+
+shift $(($OPTIND - 1))
+if [[ $# = 1 ]]; then
+	DB_TYPE=$1;
+else
+	usage;
+fi
+
+PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+ZONENAME=$(zonename);
+
+list_mysqldb() {
+	hash mysql &>/dev/null
+	[[ $? -eq 1 ]] && echo "* ERROR - mysql was not found in your PATH." && exit 2;
+
+	[[ ! `pgrep mysqld` ]] && echo "* ERROR - mysql must be running to list the databases." && exit 2;
+
+	mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1
+	[[ $? -eq 1 ]] && echo "* ERROR - Can't connect with username password specified." && exit 2;
+
+	echo "* Listing MySQL databases for ${ZONENAME}..";
+
+	mysql -u${DB_USER} -p${DB_PASS} -Ns -e "show databases;" 2> /dev/null
+	[[ $? -eq 1 ]] && echo "* ERROR - There was an error listing the databases." && exit 2;
+}
+list_postgresdb() {
+	hash psql &>/dev/null
+	[[ $? -eq 1 ]] && echo "* ERROR - psql was not found in your PATH." && exit 2;
+
+	export PGPASSWORD=${DB_PASS};
+
+	[[ ! `pgrep postgres` ]] && echo "* ERROR - postgresql must be running to list the databases." && exit 2;
+
+	psql -U ${DB_USER} -c "select datname from pg_database;" > /dev/null 2>&1
+	[[ $? > 0 ]] && echo "* ERROR - Can't connect with username password specified." && exit 2;
+
+	echo "* Listing PostgreSQL databases for ${ZONENAME}..";
+
+	psql -U ${DB_USER} -t -A -c 'select datname from pg_database;' 2> /dev/null
+	[[ $? > 0 ]] && echo "* ERROR - There was an error listing the databases." && exit 2;
+}
+
+case $DB_TYPE in
+	mysql)
+		DB_USER=${DB_USER:-root};
+		DB_PASS=${DB_PASS:-`mdata-get mysql_pw`};
+		list_mysqldb;
+		;;
+	postgresql)
+		DB_USER=${DB_USER:-postgres};
+		DB_PASS=${DB_PASS:-`mdata-get pgsql_pw`};
+		list_postgresdb;
+		;;
+	*)
+		usage;
+		;;
+esac

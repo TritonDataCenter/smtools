@@ -1,0 +1,90 @@
+#!/usr/bin/bash
+#
+# Installs latest wordpress in SmartMachine directory.
+# Requirements: Must have HTTP virtual host already setup.
+# Joyent 2012.
+
+usage() {
+cat << EOF
+
+Usage: $0 [options] DIRECTORY
+
+Arguments:
+    
+    DIRECTORY        Directory to install wordpress.
+
+Options:
+    
+    -u               Username to access database.  [use portal credentials]
+    -p               Password to access database.  [use portal credentials]
+
+EOF
+exit 2;
+}
+
+while getopts "u:p:" OPTION; do
+        case $OPTION in
+                u)
+                        DB_USER=$OPTARG;
+                        ;;
+                p)
+                        DB_PASS=$OPTARG;
+                        ;;
+                *)
+                        usage;
+                        ;;
+        esac
+done
+
+shift $(($OPTIND - 1))
+if [[ $# = 1 ]]; then
+        WP_DIR=$1;
+else
+        usage;
+fi
+
+PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+WP_USER=wp_$(zonename | awk -F\- '{ print $5 }');
+WP_PASS=$(od -An -N8 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
+WP_DB=wp_$(od -An -N3 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
+WP_FILE="latest.tar.gz";
+WP_URL="http://wordpress.org/${WP_FILE}";
+
+hash wget &>/dev/null
+[[ $? -eq 1 ]] && echo "* ERROR - wget was not found in your PATH." && exit 2;
+
+hash gtar &>/dev/null
+[[ $? -eq 1 ]] && echo "* ERROR - gtar was not found in your PATH." && exit 2;
+
+hash gsed &>/dev/null
+[[ $? -eq 1 ]] && echo "* ERROR - gsed was not found in your PATH." && exit 2;
+
+hash sm-create-db &>/dev/null
+[[ $? -eq 1 ]] && echo "* ERROR - sm-create-db was not found in your PATH." && exit 2;
+
+hash sm-create-dbuser &>/dev/null
+[[ $? -eq 1 ]] && echo "* ERROR - sm-create-dbuser was not found in your PATH." && exit 2;
+
+[[ ! -d ${WP_DIR} ]] && echo "* ERROR - Directory ${WP_DIR} doesn't exist." && exit 2;
+
+echo "* Downloading latest wordpress.";
+
+wget ${WP_URL} -O ${WP_DIR}/${WP_FILE} > /dev/null 2>&1
+[[ $? > 0 ]] && echo "* ERROR - There was an error getting ${WP_URL}." && exit 2;
+
+gtar zxvf ${WP_DIR}/${WP_FILE} -C ${WP_DIR} --strip=1 > /dev/null 2>&1
+[[ $? > 0 ]] && echo "* ERROR - There was an error extracting ${WP_FILE} to ${WP_DIR}." && exit 2;
+
+echo "* Configuring wordpress.";
+
+mv ${WP_DIR}/wp-config-sample.php ${WP_DIR}/wp-config.php
+
+gsed -i "s/database_name_here/${WP_DB}/g" ${WP_DIR}/wp-config.php
+gsed -i "s/username_here/${WP_USER}/g" ${WP_DIR}/wp-config.php
+gsed -i "s/password_here/${WP_PASS}/g" ${WP_DIR}/wp-config.php
+
+sm-create-db mysql ${WP_DB}
+
+sm-create-dbuser mysql ${WP_USER} ${WP_PASS} ${WP_DB}
+
+echo "* Visit http://x.x.x.x/wp-admin/install.php to finish the install.";

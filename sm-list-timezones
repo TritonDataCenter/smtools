@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+#
+# List timezones available to a SmartMachine.
+# Joyent 2012.
+
+PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+ZONENAME=$(zonename);
+
+echo "* Listing timezones for ${ZONENAME}..";
+
+find /usr/share/lib/zoneinfo -type f | awk -F/usr/share/lib/zoneinfo/ '{ print $2 }' | egrep -v "src/|.tab"

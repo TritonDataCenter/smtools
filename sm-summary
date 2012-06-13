@@ -1,0 +1,41 @@
+#!/usr/bin/bash
+#
+# Provides SmartMachine summary of information.
+# Joyent 2012.
+
+PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+
+echo "* Gathering SmartMachine summary..";
+SM_UUID=$(zonename);
+SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
+SM_HOSTNAME=$(hostname);
+SM_DATASET=$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }');
+[[ -f /opt/local/etc/pkg_install.conf ]] && SM_PKGSRC=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || SM_PKGSRC="Not installed";
+SM_BUILD=$(uname -v);
+SM_NPROCS=$(kstat -p -n nprocs_zone_${SM_ID} -s usage | awk '{ print $2 }');
+SM_MEMCAP=$(kstat -p -c zone_caps -n lockedmem_zone_${SM_ID} -s value | awk '{print $2/1024/1024 }');
+SM_MEMUSED=$(prstat -Z -s rss 1 1 | awk -v zone=${SM_UUID} '$8 ~ zone { printf("%d", $4 ) }');
+SM_MEMFREE=$(echo "${SM_MEMCAP}-${SM_MEMUSED}" | bc);
+SM_SWAPCAP=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s value | awk '{ print $2/1024/1024 }');
+SM_SWAPUSED=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s usage | awk '{ printf("%d", $2/1024/1024) }');
+SM_TMPUSED=$(du -hs /tmp | awk '{ print $1 }');
+SM_DISKQUOTA=$(df -h / | tail -1 | awk '{ print $2 }');
+SM_DISKUSED=$(df -h / | tail -1 | awk '{ print $5 }');
+
+cat << EOF
+SM UUID             ${SM_UUID}
+SM ID               ${SM_ID}
+Hostname	    ${SM_HOSTNAME}
+SmartOS build       ${SM_BUILD} 
+Dataset             ${SM_DATASET}
+Pkgsrc              ${SM_PKGSRC}
+Processes           ${SM_NPROCS}
+Memory (RSS) Cap    ${SM_MEMCAP}M
+Memory (RSS) Used   ${SM_MEMUSED}M
+Memory (RSS) Free   ${SM_MEMFREE}M
+Swap Cap            ${SM_SWAPCAP}M
+Swap Used           ${SM_SWAPUSED}M
+/tmp Used           ${SM_TMPUSED}
+Disk Quota          ${SM_DISKQUOTA}
+% Disk Used         ${SM_DISKUSED}
+EOF

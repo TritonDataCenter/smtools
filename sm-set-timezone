@@ -1,0 +1,44 @@
+#!/usr/bin/bash
+#
+# Set the timezone of a SmartMachine.
+# Joyent 2012.
+
+usage() {
+cat << EOF
+
+Usage: $0 TIMEZONE
+
+Arguments:
+    
+    TIMEZONE         Timezone to set your SmartMachine to.
+
+EOF
+exit 2;
+}
+
+[[ ! $1 ]] && usage;
+
+PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+TIMEZONE=$1;
+ZONENAME=$(zonename);
+
+# Check if timezone set exists first.
+TIMEZONES=$(find /usr/share/lib/zoneinfo -type f | awk -F/usr/share/lib/zoneinfo/ '{ print $2 }' | egrep -v "src/|.tab");
+for i in ${TIMEZONES[@]}; do
+	if [[ ${TIMEZONE} == ${i} ]]; then
+		FOUND="YES";
+	fi
+done
+
+[[ ! ${FOUND} ]] && echo "ERROR - The timezone ${TIMEZONE} isn't available on this SmartMachine." && exit 2;
+
+# Set the new timezone.
+echo "* Setting timezone for ${ZONENAME}..";
+
+cat /etc/default/init | grep -v "TZ=" > /etc/default/init.new
+echo "TZ=${TIMEZONE}" >> /etc/default/init.new
+mv /etc/default/init.new /etc/default/init
+rm /etc/TIMEZONE
+ln -s /etc/default/init /etc/TIMEZONE
+
+echo "* Changed to timezone to ${TIMEZONE}.  You will need to reboot.";

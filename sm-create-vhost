@@ -1,0 +1,224 @@
+#!/usr/bin/bash
+#
+# Creates simple Apache/Nginx configurations for SmartMachines.
+# Joyent 2012.
+
+usage() {
+cat << EOF
+
+Usage: $0 [options] TYPE DOMAINNAME DOCUMENTROOT
+
+Arguments:
+   
+    TYPE             Nginx or Apache. 
+    DOMAINNAME       The domain name or IP of the website.   eg: mywebsite.com
+    DOCUMENTROOT     Directory of web server document root.  eg: /home/admin/web/public
+
+Options:
+   
+    -s               SSL support.
+
+EOF
+exit 2;
+}
+
+while getopts "s" OPTION; do
+        case $OPTION in
+                s)
+                        SSL="YES";
+                        ;;
+                *)
+                        usage;
+                        ;;
+        esac
+done
+
+shift $(($OPTIND - 1))
+if [[ $# = 3 ]]; then
+        HTTP_TYPE=$1;
+        HTTP_HOST=$2;
+        HTTP_DOCROOT=$3;
+else
+        usage;
+fi
+
+PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+HOSTNAME=$(hostname);
+#HTTP_DOCROOT_PARENT=$(echo ${HTTP_DOCROOT} | sed 's,/*[^/]\+/*$,,');
+HTTP_CONFFILE="${HTTP_HOST}.conf";
+HTTP_SSLCONFFILE="${HTTP_HOST}-ssl.conf";
+APACHE_CONFDIR="/opt/local/etc/httpd/virtualhosts";
+NGINX_CONFDIR="/opt/local/etc/nginx/virtualhosts";
+IP_EXTERNAL=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
+
+apache_createconfig() {
+	APACHE_CONFIG="\
+<VirtualHost *:80>\n\
+  ServerName ${HTTP_HOST}\n\
+  ServerAlias www.${HTTP_HOST}\n\
+  ServerAlias *.${HTTP_HOST}\n\
+  DocumentRoot ${HTTP_DOCROOT}\n\
+  <Directory ${HTTP_DOCROOT}>\n\
+    Options -Indexes IncludesNOEXEC FollowSymLinks -MultiViews\n\
+    AllowOverride All\n\
+    Order allow,deny\n\
+    Allow from all\n\
+  </Directory>\n\
+</VirtualHost>";
+
+	echo -ne "${APACHE_CONFIG}" > ${APACHE_CONFDIR}/${HTTP_CONFFILE}
+
+	cat << EOF 
+* Created Apache configuration ${APACHE_CONFDIR}/${HTTP_CONFFILE}.
+  Settings:
+    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port: 80
+    Docroot: ${HTTP_DOCROOT}
+
+  For changes to take you will need to restart apache with
+  svcadm restart svc:/pkgsrc/apache.
+
+EOF
+}
+apache_createsslconfig() {
+	APACHE_CONFIG="\
+<VirtualHost ${IP_EXTERNAL}:443>\n\
+  ServerName ${HTTP_HOST}\n\
+  ServerAlias www.${HTTP_HOST}\n\
+  ServerAlias *.${HTTP_HOST}\n\
+  DocumentRoot ${HTTP_DOCROOT}\n\
+  <Directory ${HTTP_DOCROOT}>\n\
+    Options -Indexes IncludesNOEXEC FollowSymLinks -MultiViews\n\
+    AllowOverride All\n\
+    Order allow,deny\n\
+    Allow from all\n\
+  </Directory>\n\
+  SSLEngine on\n\
+  SSLCertificateFile ${APACHE_CONFDIR}/${HTTP_HOST}.crt\n\
+  SSLCertificateKeyFile ${APACHE_CONFDIR}/${HTTP_HOST}.key\n\
+</VirtualHost>";
+
+	echo -ne "${APACHE_CONFIG}" > ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE}
+
+	cat << EOF 
+* Created Apache (SSL) configuration ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE}.
+  Settings:
+    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port: 443 
+    Docroot: ${HTTP_DOCROOT}
+    SSL cert: ${APACHE_CONFDIR}/${HTTP_HOST}.crt
+    SSL key: ${APACHE_CONFDIR}/${HTTP_HOST}.key
+
+  For changes to take you will need to restart apache with
+  svcadm restart svc:/pkgsrc/apache.
+
+EOF
+}
+
+nginx_createconfig() {
+	NGINX_CONFIG="\
+server {\n\
+  listen 80;\n\
+  server_name ${HTTP_HOST} www.${HTTP_HOST} *.${HTTP_HOST};\n\
+  \n\
+  root ${HTTP_DOCROOT};\n\
+  \n\
+  location / {\n\
+    index index.html index.htm index.php;\n\
+  }\n\
+  \n\
+  location ~ \.php$ {\n\
+    include /opt/local/etc/nginx/php.conf;\n\
+  }\n\
+}";
+
+	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR}/${HTTP_CONFFILE}
+	
+	cat << EOF 
+* Created Nginx configuration ${NGINX_CONFDIR}/${HTTP_CONFFILE}.
+  Settings:
+    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port: 80
+    Docroot: ${HTTP_DOCROOT}
+
+  For changes to take you will need to restart nginx with
+  svcadm restart svc:/pkgsrc/nginx.
+  If you want PHP support with nginx you will need to
+  svcadm enable svc:/pkgsrc/php-fpm.
+
+EOF
+  
+}
+nginx_createsslconfig() {
+	NGINX_CONFIG="\
+server {\n\
+  listen 443;\n\
+  server_name ${HTTP_HOST} www.${HTTP_HOST} *.${HTTP_HOST};\n\
+  ssl on;\n\
+  #ssl_session_timeout  5m;\n\
+  #ssl_protocols  SSLv2 SSLv3 TLSv1;\n\
+  #ssl_ciphers  ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP;\n\
+  #ssl_prefer_server_ciphers   on;\n\
+  ssl_certificate ${NGINX_CONFDIR}/${HTTP_HOST}.crt;\n\
+  ssl_certificate_key ${NGINX_CONFDIR}/${HTTP_HOST}.key;\n\
+  \n\
+  root ${HTTP_DOCROOT};\n\
+  \n\
+  location / {\n\
+    index index.html index.htm index.php;\n\
+  }\n\
+  \n\
+  location ~ \.php$ {\n\
+    include /opt/local/etc/nginx/php.conf;\n\
+  }\n\
+}";
+
+	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE}
+
+	cat << EOF 
+* Created Nginx (SSL) configuration ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE}.
+  Settings:
+    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port: 443 
+    Docroot: ${HTTP_DOCROOT}
+    SSL cert: ${NGINX_CONFDIR}/${HTTP_HOST}.crt
+    SSL key: ${NGINX_CONFDIR}/${HTTP_HOST}.key
+  
+  Your certificate and key files must exist or nginx will fail to
+  start.  For changes to take you will need to restart nginx with
+  svcadm restart svc:/pkgsrc/nginx.
+
+  If you want PHP support with nginx you will need to
+  svcadm enable svc:/pkgsrc/php-fpm.
+
+EOF
+
+}
+case ${HTTP_TYPE} in
+	apache)
+		[[ ! -d ${APACHE_CONFDIR} ]] && echo "* ERROR - Directory ${APACHE_CONFDIR} doesn't exist." && exit 2;
+		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
+		if [[ ! ${SSL} ]]; then
+			[[ -s ${APACHE_CONFDIR}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR}/${HTTP_CONFFILE} already exists." && exit 2;
+			apache_createconfig;
+		else
+			[[ -s ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE} already exists." && exit 2;
+			apache_createsslconfig;
+		fi
+		;;
+
+	nginx)
+		[[ ! -d ${NGINX_CONFDIR} ]] && echo "* ERROR - Directory ${NGINX_CONFDIR} doesn't exist." && exit 2;
+		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
+		if [[ ! ${SSL} ]]; then
+			[[ -s ${NGINX_CONFDIR}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR}/${HTTP_CONFFILE} already exists." && exit 2;
+			nginx_createconfig;
+		else
+			[[ -s ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE} already exists." && exit 2;
+			nginx_createsslconfig;
+		fi
+		;;
+
+	*)
+		usage;
+esac
