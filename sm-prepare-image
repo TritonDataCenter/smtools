@@ -1,0 +1,221 @@
+#!/usr/bin/bash
+#
+# sm-prepare-image
+# A script to clean up the file system of an existing SmartMachine
+# and prepare it for turning into a provisionable SmartOS image.
+# Joyent 2012
+
+set -e
+if [ ${DEBUG} ]; then
+  set -x
+fi
+
+### Zoneinit configuration
+
+zoneinit_source=@PREFIX@/lib/zoneinit
+zoneinit_home=@VARBASE@/zoneinit
+zoneinit_files=(zoneinit zoneinit.xml includes)
+
+### Bits to look for
+{
+delete_files=(
+  /etc/ssh/ssh_*key*
+  /etc/hostname.net*
+  /var/adm
+  /var/cron
+  /var/db/pkgin
+  /var/spool/postfix/defer*
+  /var/spool/postfix/hold
+  /var/spool/postfix/incoming
+  /var/svc/log
+  /var/log:*log.*
+)
+
+blank_files=(
+  /var/log
+)
+
+touch_files=(
+  /var/adm/messages
+  /var/adm/sulog
+  /var/adm/wtmpx
+  /var/cron/log
+  /var/log/syslog
+)
+
+users=(
+root
+admin
+)
+
+delete_users_files=(
+  .*history
+  .gnupg
+  .lesshst
+  .subversion
+  .viminfo
+  .ssh/known_hosts
+)
+}
+
+### Functions
+each_file_in() {
+  # Loops through items passed in the first arg, and deletes/blanks/touches
+  # the file depending on the second arg. If a directory is found, files are
+  # located inside the directory (optionally only those matching a pattern
+  # separated by a colon in the pattern arg).
+  local item=${1%%:*}
+  local pattern=${1##*:}
+  local action=${2-touch}
+  local file
+  if [ ${item} == ${pattern} ]; then unset pattern; fi
+  if [ -e ${item} ]; then # single file, or file-in-directory
+    for file in $(find ${item} -type f ${pattern:+-name ${pattern}}); do
+      case ${action} in
+        delete) rm -f ${file} ;;
+        blank)  cp /dev/null ${file} ;;
+        *)      touch ${file} ;;
+      esac
+    done
+  elif [ ${action} == "touch" ]; then
+    touch ${item}
+  fi
+}
+current_ips() {
+  ifconfig -a | awk '{ if ($1=="inet") print $2}' | grep -v 127.0.0.1 || true
+}
+files_with_ip() {
+  local ip=$1
+  find /etc /opt/local/etc -type f | sort | xargs grep -l "${ip}" || true
+}
+
+### Stuff starts happening here
+cat <<EOF
+
+This script cleans up the file system of your machine, and makes it ready
+for turning into a provisionable image. Irreversible changes are made to this
+machine's filesystem for the sake of the image preparation, so if you intend
+to continue to use this machine, you should have created a sanity snapshot
+first, that you'll roll back to when you're done.
+
+EOF
+read -p "Do you want to go ahead now? Y/n " -n 1 yn
+echo
+if [[ ! "${yn}" =~ [Yy] ]]; then
+  exit 1
+fi
+
+echo
+echo "=> Looking for hardcoded IP addresses"
+{
+cat <<EOF
+
+The script will look for real IP addresses associated with this machine,
+which wouldn't match those of the real machines provisioned from the image
+you are about to create. You can have the occurrences turned into placeholders
+that will be automatically populated by the IP addresses when provisioning.
+Or, change the config files to listen on e.g. "all available addresses".
+
+EOF
+read -p "Do you want placeholders put in place of addresses? Y/n " -n 1 substitute_ips
+echo
+echo
+
+if [[ "${substitute_ips}" =~ [yY] ]]; then
+  for ip in $(current_ips); do
+    files_found=$(files_with_ip ${ip})
+    case ${ip} in
+      10.*|192.*) ip_placeholder='@PRIVATE_IP@' ;;
+      *)          ip_placeholder='@PUBLIC_IP@' ;;
+    esac
+    for file in ${files_found}; do
+      sed -e "s/${ip}/${ip_placeholder}/g" ${file} > ${file}.tmp
+      echo ". ${file}: '${ip}' => '${ip_placeholder}'"
+      mv ${file}.tmp ${file}
+    done
+  done
+else
+  echo "==> Substitution skipped, services set up may not work properly."
+fi
+}
+
+echo
+echo "=> Removing volatile files"
+{
+for file in ${delete_files[@]}; do
+  each_file_in ${file} delete
+done
+
+for file in ${blank_files[@]}; do
+  each_file_in ${file} blank
+done
+
+for file in ${touch_files[@]}; do
+  each_file_in ${file} touch
+done
+}
+
+echo
+echo "=> Removing users' volatile information"
+{
+for user in ${users[@]}; do
+  echo "==> Removing files for user ${user}"
+  for file in ${delete_users_files[@]}; do
+    each_file_in $(eval "cd ~${user}; pwd")/${file} delete
+  done
+  # Unset passwords set
+  echo "==> Unsetting password for user ${user}"
+  out=$(passwd -N root)
+  out=$(passwd -N admin)
+done
+}
+
+echo
+echo "=> Cleaning up old network configuration"
+{
+cat > /etc/hosts <<EOF
+::1        localhost
+127.0.0.1  localhost loghost
+EOF
+}
+
+echo
+echo "=> Creating a basic zoneinit instance"
+{
+if [ ! -d ${zoneinit_home} ]; then
+  mkdir ${zoneinit_home}
+  if [ ! -d ${zoneinit_home}/includes ]; then
+    mkdir ${zoneinit_home}/includes
+  fi
+fi
+
+for zoneinit_file in ${zoneinit_files[@]}; do
+  if [ -e ${zoneinit_source}/${zoneinit_file} ]; then
+    cp -Rp ${zoneinit_source}/${zoneinit_file} ${zoneinit_home}/
+  else
+    echo "==> WARNING: required file ${zoneinit_file} not found"
+  fi
+done
+
+svccfg import ${zoneinit_home}/zoneinit.xml
+svcadm enable zoneinit
+}
+
+echo
+echo "=> File system prepared successfully, finishing"
+{
+cat <<EOF
+
+The script is finished now. 
+
+This machine should now powered off, a snapshot taken, and an image taken
+from the snapshot. Please refer to the wiki (TBD) for more.
+
+EOF
+read -p "Do you want to power this machine off now? y/N " -n 1 yn
+echo
+echo
+if [[ "${yn}" =~ [Yy] ]]; then
+  shutdown -y -g0 -i0
+fi
+}

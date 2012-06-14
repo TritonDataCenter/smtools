@@ -1,0 +1,55 @@
+#!/bin/bash
+PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+export PATH
+
+set -o errexit
+set -o xtrace
+
+# Set basedir and default config file
+BASE=$(dirname $0)
+ZONECONFIG=/root/zoneconfig
+
+# Pretend success when not under SMF, not starting, or a dev zone
+if [ "${SMF_METHOD}" != "start" ] || [ ! -e ${ZONECONFIG} ]; then
+  exit 0
+fi
+
+function log {
+  local WHERE=$(basename ${INC-zoneinit})
+  echo "${WHERE}: $1"
+}
+
+function error {
+  local WHERE=$(basename ${INC-zoneinit})
+  local ERROR=$2
+  [ $((${ERROR}+0)) -eq 0 ] && unset ERROR
+  echo "${WHERE}: ERROR $1"
+
+  # Status 95 tells the SMF restarter to not try again, and fail fatally.
+  # We do not have atomic rollback capability here, so we shouldn't ever
+  # attempt to resume a failed zoneinit. Instead - succeed or fail in
+  # one attempt only.
+  exit ${ERROR:-95}
+}
+
+START_TIME=$(date +%s)
+log "(start)"
+
+# Pull in and execute all operations from the 'includes' directory
+for INC in ${BASE}/includes/*.sh
+do
+  log "(start)"
+  source ${INC}
+  log "(finish)"
+done
+unset INC
+
+END_TIME=$(date +%s)
+RUN_TIME=$((END_TIME-START_TIME))
+if [ ${RUN_TIME} -gt 0 ]; then
+  log "total runtime ${RUN_TIME} seconds"
+fi
+
+# provisioner takes over
+log "(finish)"
+exit 0
