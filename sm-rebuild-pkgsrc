@@ -102,7 +102,7 @@ if [[ ! "${yn}" =~ [yY] ]]; then exit 1; fi
 ### Sanity checks
 
 ## Make sure the script is configured properly
-if [ ${release} == "@PKGRELEASE@" ]; then
+if [ ${release} == '@'PKGRELEASE'@' ]; then
   cat <<EOF
 ! The script wasn't configured correctly. Make sure the script actually comes
   from the 'smtools' pkgsrc package, where essential variables are set up.
