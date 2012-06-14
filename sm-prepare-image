@@ -95,8 +95,10 @@ cat <<EOF
 This script cleans up the file system of your machine, and makes it ready
 for turning into a provisionable image. Irreversible changes are made to this
 machine's filesystem for the sake of the image preparation, so if you intend
-to continue to use this machine, you should have created a sanity snapshot
-first, that you'll roll back to when you're done.
+to continue to use this machine, make sure you had a sanity snapshot created
+first that you'll roll back to when you're done. (If you made this themachine
+for the image purposes only and are fine discarding it later on, you do not
+need the snapshot.)
 
 EOF
 read -p "Do you want to go ahead now? Y/n " -n 1 yn
@@ -111,13 +113,14 @@ echo "=> Looking for hardcoded IP addresses"
 cat <<EOF
 
 The script will look for real IP addresses associated with this machine,
-which wouldn't match those of the real machines provisioned from the image
+which won't match those of the real machines provisioned from the image
 you are about to create. You can have the occurrences turned into placeholders
 that will be automatically populated by the IP addresses when provisioning.
-Or, change the config files to listen on e.g. "all available addresses".
+The best way of course, is to avoid using real IPs in the first place, unless
+there is no other way.
 
 EOF
-read -p "Do you want placeholders put in place of addresses? Y/n " -n 1 substitute_ips
+read -p "Do you want placeholders put in place of IP addresses? Y/n " -n 1 substitute_ips
 echo
 echo
 
@@ -208,8 +211,9 @@ cat <<EOF
 
 The script is finished now. 
 
-This machine should now powered off, a snapshot taken, and an image taken
-from the snapshot. Please refer to the wiki (TBD) for more.
+This machine should now be powered off, a snapshot taken, and an image created
+from the snapshot. Please contact support to have the image created, and refer
+to the wiki (TBD) for more information.
 
 EOF
 read -p "Do you want to power this machine off now? y/N " -n 1 yn
