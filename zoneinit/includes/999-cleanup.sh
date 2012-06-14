@@ -1,6 +1,6 @@
 log "cleaning up"
 
-svcadm disable -s zoneinit
+svcadm disable zoneinit
 svccfg delete -f zoneinit
 rm -rf ${ZONECONFIG} ${BASE}/*
 
