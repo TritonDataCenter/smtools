@@ -9,7 +9,7 @@ echo "* Gathering SmartMachine summary..";
 SM_UUID=$(zonename);
 SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
 SM_HOSTNAME=$(hostname);
-SM_DATASET=$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }');
+[[ -f /etc/product ]] && SM_DATASET=$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }') || SM_DATASET="NA";
 [[ -f /opt/local/etc/pkg_install.conf ]] && SM_PKGSRC=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || SM_PKGSRC="Not installed";
 SM_BUILD=$(uname -v);
 SM_NPROCS=$(kstat -p -n nprocs_zone_${SM_ID} -s usage | awk '{ print $2 }');
@@ -20,7 +20,7 @@ SM_SWAPCAP=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s value | awk '{ p
 SM_SWAPUSED=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s usage | awk '{ printf("%d", $2/1024/1024) }');
 SM_TMPUSED=$(du -hs /tmp | awk '{ print $1 }');
 SM_DISKQUOTA=$(df -h / | tail -1 | awk '{ print $2 }');
-SM_DISKUSED=$(df -h / | tail -1 | awk '{ print $5 }');
+SM_DISKUSED=$(df -P -h / | tail -1 | awk '{ print $5 }');
 
 cat << EOF
 SM UUID             ${SM_UUID}
