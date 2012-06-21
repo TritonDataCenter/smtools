@@ -195,7 +195,7 @@ EOF
 
 }
 case ${HTTP_TYPE} in
-	apache)
+	apache|Apache)
 		[[ ! -d ${APACHE_CONFDIR} ]] && echo "* ERROR - Directory ${APACHE_CONFDIR} doesn't exist." && exit 2;
 		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
 		if [[ ! ${SSL} ]]; then
@@ -207,7 +207,7 @@ case ${HTTP_TYPE} in
 		fi
 		;;
 
-	nginx)
+	nginx|Nginx)
 		[[ ! -d ${NGINX_CONFDIR} ]] && echo "* ERROR - Directory ${NGINX_CONFDIR} doesn't exist." && exit 2;
 		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
 		if [[ ! ${SSL} ]]; then
