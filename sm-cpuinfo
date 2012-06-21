@@ -19,7 +19,7 @@ exit 2;
 while getopts "p" OPTION; do
 	case $OPTION in
 		p)
-			machine="YES";
+			MACHINE="YES";
 			;;
 		*)
 			usage;
@@ -28,22 +28,16 @@ while getopts "p" OPTION; do
 done
 
 PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
-zone=$(zonename);
-zoneid=$(zoneadm list -p | awk -F: '{print $1}')
+SM_UUID=$(zonename);
+SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
 
-get_cpu_used() {
-        kstat_cpu_cap=$( kstat -p -c zone_caps -n cpucaps_zone_$zoneid -s value | awk '{print $2}' )
-        kstat_cpu_used=$( kstat -p -c zone_caps -n cpucaps_zone_$zoneid -s usage | awk '{print $2}' )
-        cpu_used=$( echo -e "scale=2 ; ($kstat_cpu_used/$kstat_cpu_cap)*100" | bc | sed 's/\.[0-9]*//' )
-}
-get_cpu_util() {
-        cpu_util=$( /usr/bin/prstat -Z 1 1 | /usr/xpg4/bin/awk -v zone=$zone '$8 ~ zone { print $7 }' | sed 's/%//g' )
-}
+KSTAT_CPU_CAP=$(kstat -p -c zone_caps -n cpucaps_zone_${SM_ID} -s value | awk '{print $2}');
+KSTAT_CPU_USED=$(kstat -p -c zone_caps -n cpucaps_zone_${SM_ID} -s usage | awk '{print $2}');
+CPU_USED=$(echo -e "scale=2; (${KSTAT_CPU_USED}/${KSTAT_CPU_CAP})*100" | bc 2>/dev/null | sed 's/\.[0-9]*//');
+[[ ! ${CPU_USED} ]] && CPU_USED="NA";
 
-echo "* Gathering cpu infomation for $zone..";
-get_cpu_used
-get_cpu_util
-[ "$machine" ] && echo -n "cpu_used:" || echo -n "CPU Cap Used: "
-[ "$machine" ] && echo "$cpu_used" || echo "$cpu_used %"
-[ "$machine" ] && echo -n "cpu_util:" || echo -n "System CPU Used: "
-[ "$machine" ] && echo "$cpu_util" || echo "$cpu_util %"
+CPU_UTIL=$(/usr/bin/prstat -Z 1 1 | /usr/xpg4/bin/awk -v zone=${SM_UUID} '$8 ~ zone { print $7 }' | sed 's/%//g')
+
+echo "* Gathering cpu infomation for ${SM_UUID}..";
+[ "${MACHINE}" ] && echo "cpu_used:${CPU_USED}" || echo "CPU Cap Used: ${CPU_USED} %"
+[ "${MACHINE}" ] && echo "cpu_util:${CPU_UTIL}" || echo "System CPU Used: ${CPU_UTIL} %"
