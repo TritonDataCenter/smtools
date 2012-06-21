@@ -1,5 +1,8 @@
-smtools-0.1
+smtools-20120614
 * initial release
 
-smtools-0.x
+smtools-x
 * add filips sm-upgrade and sm-prepare
+* updated sm-cpuinfo to work with older sm's
+* updated sm-summary to work with older sm's
+* fixed apache|Apache bug in sm-create-vhost
