@@ -92,44 +92,63 @@ files_with_ip() {
 ### Stuff starts happening here
 cat <<EOF
 
+*** WARNING: PLEASE READ CAREFULLY!  THIS SCRIPT WILL ALTER YOUR SYSTEM ***
+
 This script cleans up the file system of your machine, and makes it ready
 for turning into a provisionable image. Irreversible changes are made to this
 machine's filesystem for the sake of the image preparation, so if you intend
-to continue to use this machine, make sure you had a sanity snapshot created
-first that you'll roll back to when you're done. (If you made this themachine
-for the image purposes only and are fine discarding it later on, you do not
-need the snapshot.)
+to continue to use this machine, make sure you have a sanity snapshot created
+first that you can roll back to when you're done. If you made this machine for
+the image purposes only and are fine discarding it later on, you do not
+need a snapshot.
+
+This script will:
+
+  Change hard coded IP addresses to variables [optional]
+  Delete transient files and log files
+  Unset passwords for 'root' and 'admin' users
+  Reset network information
+
+If you are at all unsure, stop now and check the script.
 
 EOF
-read -p "Do you want to go ahead now? Y/n " -n 1 yn
+read -p "Do you want to proceed? y/N " yn
 echo
 if [[ ! "${yn}" =~ [Yy] ]]; then
   exit 1
 fi
 
+if [ $(id -u) -ne 0 ]; then
+  echo "Sorry, you must run this script as root"
+  exit 1
+fi
+
 echo
-echo "=> Looking for hardcoded IP addresses"
+echo "=> Looking for hard coded IP addresses"
 {
 cat <<EOF
 
-The script will look for real IP addresses associated with this machine,
-which won't match those of the real machines provisioned from the image
-you are about to create. You can have the occurrences turned into placeholders
-that will be automatically populated by the IP addresses when provisioning.
-The best way of course, is to avoid using real IPs in the first place, unless
-there is no other way.
+The script will look for IP addresses associated with this machine, which
+won't match those of the machines provisioned from the image you are about
+to create. You can have the addresses turned into placeholders that will be
+automatically populated by the IP addresses when provisioning.
+
+We recommend you avoid using hardcoded IP addresses in the first place, unless
+there is no other alternative.
 
 EOF
-read -p "Do you want placeholders put in place of IP addresses? Y/n " -n 1 substitute_ips
-echo
-echo
+read -p "Do you want place holders put in place of IP addresses? Y/n " subips
 
-if [[ "${substitute_ips}" =~ [yY] ]]; then
+if [[ -z "${subips}" || "${subips}" =~ [yY] ]]; then
   for ip in $(current_ips); do
     files_found=$(files_with_ip ${ip})
     case ${ip} in
-      10.*|192.*) ip_placeholder='@PRIVATE_IP@' ;;
-      *)          ip_placeholder='@PUBLIC_IP@' ;;
+      10.*)         ip_placeholder='@PRIVATE_IP@' ;;
+      172.1[6-9].*) ip_placeholder='@PRIVATE_IP@' ;;
+      172.2[0-9].*) ip_placeholder='@PRIVATE_IP@' ;;
+      172.3[0-1].*) ip_placeholder='@PRIVATE_IP@' ;;
+      192.168.*)    ip_placeholder='@PRIVATE_IP@' ;;
+      *)            ip_placeholder='@PUBLIC_IP@' ;;
     esac
     for file in ${files_found}; do
       sed -e "s/${ip}/${ip_placeholder}/g" ${file} > ${file}.tmp
@@ -138,6 +157,7 @@ if [[ "${substitute_ips}" =~ [yY] ]]; then
     done
   done
 else
+  echo
   echo "==> Substitution skipped, services set up may not work properly."
 fi
 }
@@ -215,11 +235,25 @@ This machine should now be powered off, a snapshot taken, and an image created
 from the snapshot. Please contact support to have the image created, and refer
 to the wiki (TBD) for more information.
 
+One reason to not power off now would be to inspect the zoneinit files (start
+scripts executed when a new machine is provisioned) at ${zoneinit_home} and
+optionally implement your own ones in ${zoneinit_home}/includes.
+
 EOF
-read -p "Do you want to power this machine off now? y/N " -n 1 yn
-echo
-echo
-if [[ "${yn}" =~ [Yy] ]]; then
-  shutdown -y -g0 -i0
+read -p "Do you want to power this machine off now? Y/n " yn
+if [[ -z "${yn}" || "${yn}" =~ [Yy] ]]; then
+  cat <<EOF
+
+Powering down in 10 seconds... (Ctrl C if not desired)
+
+EOF
+  shutdown -y -g10 -i0 >/dev/null 2>&1
+else
+  cat <<EOF
+
+The machine was left powered up. Power off manually and create the final
+snapshot when ready.
+
+EOF
 fi
 }
