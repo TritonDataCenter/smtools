@@ -1,3 +1,7 @@
+log "cleaning files"
+
+cp /dev/null /var/log/auth.log >/dev/null
+
 log "substituting placeholders for real data in config files"
 
 substitute_files=($(find /etc /opt/local/etc -type f | sort | xargs \
