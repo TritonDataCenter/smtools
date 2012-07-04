@@ -10,6 +10,13 @@ if [ ${DEBUG} ]; then
   set -x
 fi
 
+if [ "$1" == "-y" ]; then
+  # Unattended mode, automate read prompts
+  yn_start=y
+  yn_subips=y
+  yn_halt=y
+fi
+
 ### Zoneinit configuration
 
 zoneinit_source=@PREFIX@/lib/zoneinit
@@ -112,9 +119,10 @@ This script will:
 If you are at all unsure, stop now and check the script.
 
 EOF
-read -p "Do you want to proceed? y/N " yn
+[ ${yn_start} ] || read -p "Do you want to proceed? y/N " yn_start
 echo
-if [[ ! "${yn}" =~ [Yy] ]]; then
+
+if [[ ! "${yn_start}" =~ [Yy] ]]; then
   exit 1
 fi
 
@@ -137,9 +145,9 @@ We recommend you avoid using hardcoded IP addresses in the first place, unless
 there is no other alternative.
 
 EOF
-read -p "Do you want place holders put in place of IP addresses? Y/n " subips
+[ ${yn_subips} ] || read -p "Do you want place holders put in place of IP addresses? Y/n " yn_subips
 
-if [[ -z "${subips}" || "${subips}" =~ [yY] ]]; then
+if [[ -z "${yn_subips}" || "${yn_subips}" =~ [yY] ]]; then
   for ip in $(current_ips); do
     files_found=$(files_with_ip ${ip})
     case ${ip} in
@@ -240,8 +248,8 @@ scripts executed when a new machine is provisioned) at ${zoneinit_home} and
 optionally implement your own ones in ${zoneinit_home}/includes.
 
 EOF
-read -p "Do you want to power this machine off now? Y/n " yn
-if [[ -z "${yn}" || "${yn}" =~ [Yy] ]]; then
+[ ${yn_halt} ] || read -p "Do you want to power this machine off now? Y/n " yn_halt
+if [[ -z "${yn_halt}" || "${yn_halt}" =~ [Yy] ]]; then
   cat <<EOF
 
 Powering down in 10 seconds... (Ctrl C if not desired)
