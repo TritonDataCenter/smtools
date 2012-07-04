@@ -1,29 +1,26 @@
-log "setting system passwords for users"
+: ${USERS=admin root}
+USERS=(${USERS})
 
-ADMIN_PW=$(mdata-get admin_pw 2>/dev/null) || unset ADMIN_PW
+for USER in ${USERS[@]}; do
 
-if [ "${ADMIN_PW}" ] && \
-   [ -e "$(type -p genbfpw)" ] && [ -e "$(type -p changepass)" ]; then
-  if [[ ! "${ADMIN_PW}" =~ ^\$2a\$ ]]; then
-    # Need to get a Blowfish hash first
-    ADMIN_PW=$(genbfpw -p ${ADMIN_PW})
+  log "setting system password for user '${USER}'"
+  PASS_VAR_LOWER=${USER}_pw
+  PASS_VAR_UPPER=$(echo ${PASS_VAR_LOWER} | tr '[a-z]' '[A-Z]')
+
+  USER_PW=${!PASS_VAR_UPPER}
+  if [ ! ${USER_PW} ] && [ ${HAS_METADATA} ]; then
+    USER_PW=$(mdata-get ${PASS_VAR_LOWER} 2>/dev/null) || unset USER_PW
   fi
-  echo "admin:${ADMIN_PW}" | changepass -e > /dev/null 2>&1 || \
-    error "System 'admin' password change failed."
-else
-  passwd -N admin
-fi
 
-ROOT_PW=$(mdata-get root_pw 2>/dev/null) || unset ROOT_PW
-
-if [ "${ROOT_PW}" ] && \
-   [ -e "$(type -p genbfpw)" ] && [ -e "$(type -p changepass)" ]; then
-  if [[ ! "${ROOT_PW}" =~ ^\$2a\$ ]]; then
-    # Need to get a Blowfish hash first
-    ROOT_PW=$(genbfpw -p ${ROOT_PW})
+  if [ "${USER_PW}" ] && \
+     [ -e "$(type -p genbfpw)" ] && [ -e "$(type -p changepass)" ]; then
+    if [[ ! "${USER_PW}" =~ ^\$2a\$ ]]; then
+      # Need to get a Blowfish hash first
+      USER_PW=$(genbfpw -p ${USER_PW})
+    fi
+    echo "${USER}:${USER_PW}" | changepass -e > /dev/null 2>&1 || \
+      error "System password change for '${USER}' failed."
+  else
+    passwd -N ${USER}
   fi
-  echo "root:${ROOT_PW}" | changepass -e > /dev/null 2>&1 || \
-    error "System 'root' password change failed."
-else
-  passwd -N root
-fi
+done
