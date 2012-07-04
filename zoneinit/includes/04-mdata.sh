@@ -1,3 +1,5 @@
-log "enabling metadata agent"
+if [ ${HAS_METADATA} ]; then
+  log "enabling metadata agent"
 
-svcadm enable mdata:fetch
+  svcadm enable mdata:fetch
+fi
