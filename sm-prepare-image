@@ -132,45 +132,6 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 echo
-echo "=> Looking for hard coded IP addresses"
-{
-cat <<EOF
-
-The script will look for IP addresses associated with this machine, which
-won't match those of the machines provisioned from the image you are about
-to create. You can have the addresses turned into placeholders that will be
-automatically populated by the IP addresses when provisioning.
-
-We recommend you avoid using hardcoded IP addresses in the first place, unless
-there is no other alternative.
-
-EOF
-[ ${yn_subips} ] || read -p "Do you want place holders put in place of IP addresses? Y/n " yn_subips
-
-if [[ -z "${yn_subips}" || "${yn_subips}" =~ [yY] ]]; then
-  for ip in $(current_ips); do
-    files_found=$(files_with_ip ${ip})
-    case ${ip} in
-      10.*)         ip_placeholder='@PRIVATE_IP@' ;;
-      172.1[6-9].*) ip_placeholder='@PRIVATE_IP@' ;;
-      172.2[0-9].*) ip_placeholder='@PRIVATE_IP@' ;;
-      172.3[0-1].*) ip_placeholder='@PRIVATE_IP@' ;;
-      192.168.*)    ip_placeholder='@PRIVATE_IP@' ;;
-      *)            ip_placeholder='@PUBLIC_IP@' ;;
-    esac
-    for file in ${files_found}; do
-      sed -e "s/${ip}/${ip_placeholder}/g" ${file} > ${file}.tmp
-      echo ". ${file}: '${ip}' => '${ip_placeholder}'"
-      mv ${file}.tmp ${file}
-    done
-  done
-else
-  echo
-  echo "==> Substitution skipped, services set up may not work properly."
-fi
-}
-
-echo
 echo "=> Removing volatile files"
 {
 for file in ${delete_files[@]}; do
@@ -208,6 +169,45 @@ cat > /etc/hosts <<EOF
 ::1        localhost
 127.0.0.1  localhost loghost
 EOF
+}
+
+echo
+echo "=> Looking for hard coded IP addresses"
+{
+cat <<EOF
+
+The script will look for IP addresses associated with this machine, which
+won't match those of the machines provisioned from the image you are about
+to create. You can have the addresses turned into placeholders that will be
+automatically populated by the IP addresses when provisioning.
+
+We recommend you avoid using hardcoded IP addresses in the first place, unless
+there is no other alternative.
+
+EOF
+[ ${yn_subips} ] || read -p "Do you want place holders put in place of IP addresses? Y/n " yn_subips
+
+if [[ -z "${yn_subips}" || "${yn_subips}" =~ [yY] ]]; then
+  for ip in $(current_ips); do
+    files_found=$(files_with_ip ${ip})
+    case ${ip} in
+      10.*)         ip_placeholder='@PRIVATE_IP@' ;;
+      172.1[6-9].*) ip_placeholder='@PRIVATE_IP@' ;;
+      172.2[0-9].*) ip_placeholder='@PRIVATE_IP@' ;;
+      172.3[0-1].*) ip_placeholder='@PRIVATE_IP@' ;;
+      192.168.*)    ip_placeholder='@PRIVATE_IP@' ;;
+      *)            ip_placeholder='@PUBLIC_IP@' ;;
+    esac
+    for file in ${files_found}; do
+      sed -e "s/${ip}/${ip_placeholder}/g" ${file} > ${file}.tmp
+      echo ". ${file}: '${ip}' => '${ip_placeholder}'"
+      mv ${file}.tmp ${file}
+    done
+  done
+else
+  echo
+  echo "==> Substitution skipped, services set up may not work properly."
+fi
 }
 
 echo
