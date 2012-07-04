@@ -23,7 +23,8 @@ if [ ${#NET_INTERFACES} -eq 0 ]; then
     for IP in $(ifconfig -a|awk '{if($1=="inet")print $2}'); do
       case ${IP} in
         127.*) LOCALS=(${LOCALS[@]} ${IP});;
-        10.*)  PRIVATES=(${PRIVATES[@]} ${IP});;
+        10.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*|192.168.*)
+               PRIVATES=(${PRIVATES[@]} ${IP});;
         *)     PUBLICS=(${PUBLICS[@]} ${IP});;
       esac
     done
