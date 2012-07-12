@@ -157,8 +157,7 @@ for user in ${users[@]}; do
   done
   # Unset passwords set
   echo "==> Unsetting password for user ${user}"
-  out=$(passwd -N root)
-  out=$(passwd -N admin)
+  out=$(passwd -N ${user})
 done
 }
 
