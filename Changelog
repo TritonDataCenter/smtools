@@ -6,3 +6,6 @@ smtools-x
 * updated sm-cpuinfo to work with older sm's
 * updated sm-summary to work with older sm's
 * fixed apache|Apache bug in sm-create-vhost
+
+smtools-x
+* fixed sm-summary bug pulling dataset info
