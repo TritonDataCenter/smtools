@@ -9,7 +9,9 @@ echo "* Gathering SmartMachine summary..";
 SM_UUID=$(zonename);
 SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
 SM_HOSTNAME=$(hostname);
-[[ -f /etc/product ]] && SM_DATASET=$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }') || SM_DATASET="NA";
+[[ -f /etc/product ]] && SM_IMAGE=$(cat /etc/product | grep Image | awk '{ print $2 " " $3 }') || SM_IMAGE="NA";
+[[ -f /etc/product ]] && SM_IMAGE=${SM_IMAGE:-$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }')} || SM_IMAGE="NA";
+[[ -f /etc/product ]] && SM_IMAGE=${SM_IMAGE:-NA} || SM_IMAGE="NA";
 [[ -f /opt/local/etc/pkg_install.conf ]] && SM_PKGSRC=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || SM_PKGSRC="Not installed";
 SM_BUILD=$(uname -v);
 SM_NPROCS=$(kstat -p -n nprocs_zone_${SM_ID} -s usage | awk '{ print $2 }');
@@ -27,7 +29,7 @@ SM UUID             ${SM_UUID}
 SM ID               ${SM_ID}
 Hostname	    ${SM_HOSTNAME}
 SmartOS build       ${SM_BUILD} 
-Dataset             ${SM_DATASET}
+Dataset             ${SM_IMAGE}
 Pkgsrc              ${SM_PKGSRC}
 Processes           ${SM_NPROCS}
 Memory (RSS) Cap    ${SM_MEMCAP}M
