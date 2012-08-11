@@ -18,8 +18,11 @@ for USER in ${USERS[@]}; do
       # Need to get a Blowfish hash first
       USER_PW=$(genbfpw -p ${USER_PW})
     fi
-    echo "${USER}:${USER_PW}" | changepass -e > /dev/null 2>&1 || \
+    if echo "${USER}:${USER_PW}" | changepass -e > /dev/null 2>&1; then
+      [ ${SSH_ALLOW_PASSWORDS} ] || SSH_ALLOW_PASSWORDS=true
+    else
       error "System password change for '${USER}' failed."
+    fi
   else
     passwd -N ${USER}
   fi
