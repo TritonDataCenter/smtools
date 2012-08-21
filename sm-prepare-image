@@ -27,6 +27,7 @@ zoneinit_files=(zoneinit zoneinit.xml includes)
 {
 delete_files=(
   /etc/ssh/ssh_*key*
+  /var/ssh/ssh_*key*
   /etc/hostname.net*
   /var/adm
   /var/cron
@@ -145,6 +146,9 @@ done
 for file in ${touch_files[@]}; do
   each_file_in ${file} touch
 done
+
+# Make sure /var/ssh exists to hold SSH host keys
+[ -d /var/ssh ] || mkdir -p /var/ssh
 }
 
 echo
