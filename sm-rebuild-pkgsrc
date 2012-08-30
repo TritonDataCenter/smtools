@@ -400,7 +400,7 @@ EOF
       print "PATH=/opt/local/gnu/bin:" $2;
     else
       print}
-  ' ${user}/.profile > /tmp/.profile.tmp && mv /tmp/.profile.tmp ${user}/.profile
+  ' ${user}/.profile > /tmp/.profile.tmp 2>&1 && mv /tmp/.profile.tmp ${user}/.profile
 done
 
 [ -e ${HOME}/.profile ] && source ${HOME}/.profile
@@ -509,7 +509,8 @@ while [ $((i--)) -gt 0 ]; do
   fi
 done
 
-cat <<EOF
+if [ ${#dup_svc[@]} -gt 0 ]; then
+  cat <<EOF
 
 - Duplicate SMF service names found. Starting with the 2012Q1 package set, all
   pkgsrc packages were changed to use the 'pkgsrc/*' SMF namespace, to stand
@@ -523,17 +524,17 @@ cat <<EOF
   the name changes on this machine:
 
 EOF
-printf "    %-20s %-20s %-20s\n" "SERVICE" "NEW NAME" "OLD NAME(S)"; for svc in ${dup_svc[@]}; do
-  unset new_name old_name
-  for svcname in $(svcs -Ho svc ${svc}|sort -u); do
-    case ${svcname} in
-      pkgsrc/*) new_name=${svcname} ;;
-      *) old_name=(${old_name[@]} ${svcname}) ;;
-    esac
+  printf "    %-20s %-20s %-20s\n" "SERVICE" "NEW NAME" "OLD NAME(S)"; for svc in ${dup_svc[@]}; do
+    unset new_name old_name
+    for svcname in $(svcs -Ho svc ${svc}|sort -u); do
+      case ${svcname} in
+        pkgsrc/*) new_name=${svcname} ;;
+        *) old_name=(${old_name[@]} ${svcname}) ;;
+      esac
+    done
+    printf "    %-20s %-20s %-20s\n" "${svc}" "${new_name}" "${old_name[@]}"
   done
-  printf "    %-20s %-20s %-20s\n" "${svc}" "${new_name}" "${old_name[@]}"
-done
-cat <<EOF
+  cat <<EOF
 
   For instance, with '${svc}', you would do this:
 
@@ -547,11 +548,12 @@ cat <<EOF
     svccfg export old_name | diff - <(svccfg export new_name)
 
 EOF
+fi
 }
 
 # Check for processes needing restart
 {
-if pgrep -f /opt/local >/dev/null; then
+if pgrep -fl /opt/local | grep -v $(basename $0) >/dev/null; then
   cat <<EOF
 - This machine seems to have processes running that reference files under the 
   /opt/local path. Since the entire /opt/local path has been re-built, the
