@@ -372,7 +372,7 @@ echo "* Updating OpenSSL certificate database..."
 
 echo "* Removing deprecated system files..."
 if crle | grep 'opt/gcc' >/dev/null; then
-  crle -l /lib:/usr/lib:/opt/local/lib
+  crle -l /lib:/usr/lib
 fi
 if [ -d /opt/gcc ]; then
   rm -rf /opt/gcc
@@ -381,9 +381,12 @@ fi
   touch /opt/local/.dlj_license_accepted
 rm -rf /opt/local.old
 
+PATH=/opt/local/gnu/bin:${PATH}
+hash -r
+
 echo "* Updating tool configuration..."
 for user in /root /home/admin /home/node; do
-  /opt/local/bin/sed -r -i '/^(MANPATH|alias man)/d' ${user}/.{profile,bashrc} 2>/dev/null || true
+  sed -r -i '/^(MANPATH|alias man)/d' ${user}/.{profile,bashrc} 2>/dev/null || true
   [ -e ${user}/.profile ] && cat >> ${user}/.profile <<EOF
 
 # man configuration
@@ -391,6 +394,13 @@ MANPATH=/opt/local/gcc47/man:/opt/local/java/sun6/man:/opt/local/lib/perl5/man:/
 export MANPATH
 alias man='TROFF="groff -T ascii" TCAT="cat" PAGER="less -is" /bin/man -T -mandoc'
 EOF
+
+  awk -F= '{
+    if ($1~/^PATH/ && $2!~/gnu\/bin/)
+      print "PATH=/opt/local/gnu/bin:" $2;
+    else
+      print}
+  ' ${user}/.profile > /tmp/.profile.tmp && mv /tmp/.profile.tmp ${user}/.profile
 done
 
 [ -e ${HOME}/.profile ] && source ${HOME}/.profile
