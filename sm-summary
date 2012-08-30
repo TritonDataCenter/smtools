@@ -29,7 +29,7 @@ SM UUID             ${SM_UUID}
 SM ID               ${SM_ID}
 Hostname	    ${SM_HOSTNAME}
 SmartOS build       ${SM_BUILD} 
-Dataset             ${SM_IMAGE}
+Image               ${SM_IMAGE}
 Pkgsrc              ${SM_PKGSRC}
 Processes           ${SM_NPROCS}
 Memory (RSS) Cap    ${SM_MEMCAP}M
