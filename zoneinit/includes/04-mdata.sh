@@ -1,7 +1,6 @@
 if [ ${HAS_METADATA} ]; then
   log "enabling metadata agent"
-
-  svcadm enable -s mdata:fetch
+  svcadm enable mdata:fetch
 fi
 
 # Use mdata-get to retrieve passwords for users needed by the image
