@@ -16,9 +16,9 @@ for USER in ${USERS[@]}; do
   if [ ${HAS_METADATA} ]; then
     USER_PW=$(mdata-get ${PASS_VAR_LOWER} 2>/dev/null) || unset USER_PW
     if [ ${USER_PW} ]; then
-      eval "${!PASS_VAR_UPPER}=${USER_PW}"
+      eval "${PASS_VAR_UPPER}=${USER_PW}"
     else
-      unset ${!PASS_VAR_UPPER}
+      unset ${PASS_VAR_UPPER}
     fi
   fi
 done
