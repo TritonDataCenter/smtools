@@ -6,7 +6,8 @@ RESOLVERS=(${RESOLVERS})
 echo "${HOSTNAME}" > /etc/nodename
 /bin/hostname ${HOSTNAME}
 
-sed -i'' '/nameserver/d' /etc/resolv.conf
+sed '/nameserver/d' /etc/resolv.conf > /tmp/resolv.conf.tmp && \
+  mv /tmp/resolv.conf.tmp /etc/resolv.conf
 for HOST in ${RESOLVERS[@]}; do
   echo "nameserver ${HOST}" >> /etc/resolv.conf
 done
