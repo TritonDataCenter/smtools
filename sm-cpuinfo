@@ -27,7 +27,7 @@ while getopts "p" OPTION; do
 	esac
 done
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 SM_UUID=$(zonename);
 SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
 

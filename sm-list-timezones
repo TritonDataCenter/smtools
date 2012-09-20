@@ -3,7 +3,7 @@
 # List timezones available to a SmartMachine.
 # Joyent 2012.
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 ZONENAME=$(zonename);
 
 echo "* Listing timezones for ${ZONENAME}..";

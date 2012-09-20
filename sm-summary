@@ -3,7 +3,7 @@
 # Provides SmartMachine summary of information.
 # Joyent 2012.
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
 echo "* Gathering SmartMachine summary..";
 SM_UUID=$(zonename);

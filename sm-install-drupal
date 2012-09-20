@@ -44,7 +44,7 @@ else
         usage;
 fi
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 DP_USER=dp_$(zonename | awk -F\- '{ print $5 }');
 DP_PASS=$(od -An -N8 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
 DP_DB=dp_$(od -An -N3 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');

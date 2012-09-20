@@ -42,7 +42,7 @@ else
         usage;
 fi
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 HOSTNAME=$(hostname);
 #HTTP_DOCROOT_PARENT=$(echo ${HTTP_DOCROOT} | sed 's,/*[^/]\+/*$,,');
 HTTP_CONFFILE="${HTTP_HOST}.conf";

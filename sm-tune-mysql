@@ -34,7 +34,7 @@ while getopts "u:p:" OPTION; do
 	esac
 done
 
-PATH="/mysql/bin:/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/mysql/bin:/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
 [[ ! ${DB_USER} ]] && DB_USER="root";
 [[ ! ${DB_PASS} ]] && DB_PASS="$(mdata-get mysql_pw)";

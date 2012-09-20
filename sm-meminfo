@@ -38,7 +38,7 @@ else
 	usage;
 fi
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 zone=$(zonename);
 zoneid=$(zoneadm list -p | awk -F: '{print $1}')
 

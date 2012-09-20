@@ -3,7 +3,7 @@
 # Shuts down a SmartMachine.
 # Joyent 2012.
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
 # Un-mount NFS filesystems first.
 for i in $(df -F nfs 2>/dev/null | egrep -v "^Filesystem" | awk '{ print $1 }'); do 

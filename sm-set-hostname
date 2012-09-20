@@ -14,7 +14,7 @@ exit 2;
 
 [[ ! $1 ]] && usage;
 
-PATH="/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 HOSTNAME=$1
 ZONENAME=$(zonename);
 IP_EXTERNAL=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
