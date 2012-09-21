@@ -15,6 +15,7 @@ fi
 
 if [ ${SSH_ALLOW_PASSWORDS} ]; then
   log "enabling password authentication in SSH"
-  sed -ri'' '/^PasswordAuthentication/s/[a-zA-Z]+$/yes/' \
-    /etc/ssh/sshd_config
+  sed '/^PasswordAuthentication/s/[nN][yY]$/yes/' \
+    /etc/ssh/sshd_config > /tmp/sshd_config.tmp && \
+    mv /tmp/sshd_config.tmp /etc/ssh/sshd_config
 fi
