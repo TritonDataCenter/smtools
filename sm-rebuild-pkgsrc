@@ -386,7 +386,7 @@ hash -r
 
 echo "* Updating tool configuration..."
 for user in /root /home/admin /home/node; do
-  sed -r -i '/^(MANPATH|alias man)/d' ${user}/.{profile,bashrc} 2>/dev/null || true
+  gsed -r -i '/^(MANPATH|alias man)/d' ${user}/.{profile,bashrc} 2>/dev/null || true
   [ -e ${user}/.profile ] && cat >> ${user}/.profile <<EOF
 
 # man configuration
@@ -413,7 +413,7 @@ fi
 
 ## Check for missing packages
 {
-sed -ri'' '
+sed -e '
   s/php5(-|$)/php${php_version_default}\1/g;
   s/py(thon)?2[456]/py\1'${python_version_default}'/g;
   s/^(capistrano|mongrel|rails|rake|rubyforge|rubygems|thin)/ruby18-\1/g;
@@ -422,8 +422,8 @@ sed -ri'' '
   s/postgresql[0-9][0-9]/postgresql'${pgsql_version_default/\./}'/g;
   s/gcc-runtime/gcc'${gcc_default}'-runtime/g; s/gcc-compiler/gcc'${gcc_default}'/g;
   /^(man|ruby|postgresql'${pgsql_version_default/\./}'|gcc[34]4|gcc-runtime)$/d
-  ' ${backup_packages}
-sort -o ${backup_packages}{,}
+  ' ${backup_packages} | sort > ${backup_packages}.tmp && \
+  mv ${backup_packages}.tmp ${backup_packages}
 missing=($(missing_packages))
 if [ ${#missing[@]} -gt 0 ]; then
   if missing_packages|grep ^sun-j >/dev/null; then
@@ -451,14 +451,15 @@ fi
 if [ ${mysql_dumped} ] && [ -s ${backup_mydump} ]; then
   echo "* Upgrading MySQL databases..."
   if [ -e /opt/local/etc/my.cnf ]; then
-    sed -i'' \
+    sed \
         -e '/skip-bdb/d' \
         -e 's/skip-locking/skip-external-locking/' \
         -e 's/log_slow_queries/slow_query_log_file/' \
         -e '/slow_query_log =/d' \
         -e '/slow_query_log_file/i\
 slow_query_log = 1
-'  /opt/local/etc/my.cnf
+'  /opt/local/etc/my.cnf > /tmp/my.cnf && \
+    mv /tmp/my.cnf /opt/local/etc/my.cnf
   fi
   svcadm enable -s pkgsrc/mysql:default
   sleep 4
