@@ -28,6 +28,7 @@ zoneinit_files=(zoneinit zoneinit.xml includes)
 delete_files=(
   /etc/ssh/ssh_*key*
   /var/ssh/ssh_*key*
+  /etc/defaultrouter
   /etc/hostname.net*
   /var/adm
   /var/cron
