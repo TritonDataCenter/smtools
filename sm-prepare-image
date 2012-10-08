@@ -241,11 +241,12 @@ echo "=> File system prepared successfully, finishing"
 {
 cat <<EOF
 
-The script is finished now. 
+The script is finished now.
 
 This machine should now be powered off, a snapshot taken, and an image created
 from the snapshot. Please contact support to have the image created, and refer
-to the wiki (TBD) for more information.
+to "Creating Your Own SmartMachine Image" in the wiki (http://wiki.joyent.com/wiki/x/zgCC)
+for more information.
 
 One reason to not power off now would be to inspect the zoneinit files (start
 scripts executed when a new machine is provisioned) at ${zoneinit_home} and
