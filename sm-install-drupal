@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
-# Installs drupal insto SmartMachine directory. You may need
-# to change DP_FILE to what version you need.
+# Installs drupal in destination directory. You may
+# need to change DP_FILE to what version you need.
 # Requirements: Must have HTTP virtual host already setup.
 # Joyent 2012. 
 
@@ -45,30 +45,32 @@ else
 fi
 
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+DB_USER=${DB_USER:-root};
+DB_PASS=${DB_PASS:-`mdata-get mysql_pw`};
 DP_USER=dp_$(zonename | awk -F\- '{ print $5 }');
 DP_PASS=$(od -An -N8 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
 DP_DB=dp_$(od -An -N3 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
-DP_FILE="drupal-7.12.tar.gz";
+DP_FILE="drupal-7.16.tar.gz";
 DP_URL="http://ftp.drupal.org/files/projects/${DP_FILE}";
 
-hash wget &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - wget was not found in your PATH." && exit 2;
+# Check for tools in PATH
+for i in wget gtar gsed sm-create-db sm-create-dbuser mysql; do
+        hash $i &>/dev/null
+        [[ $? -eq 1 ]] && echo "* ERROR - $i was not found in your PATH." && exit 2;
+done
 
-hash gtar &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - gtar was not found in your PATH." && exit 2;
+# Check if MySQL is running
+[[ ! `pgrep mysqld` ]] && echo "* ERROR - mysql must be running to create the database for wordpress." && exit 2;
 
-hash gsed &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - gsed was not found in your PATH." && exit 2;
+# Check that we can connect with DB_USER DB_PASS
+mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1
+[[ $? -eq 1 ]] && echo "* ERROR - Can't connect to mysql with username password specified." && exit 2;
 
-hash sm-create-db &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - sm-create-db was not found in your PATH." && exit 2;
+# Check if destination directory exists
+[[ ! -d ${DP_DIR} ]] && mkdir ${DP_DIR};
 
-hash sm-create-dbuser &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - sm-create-dbuser was not found in your PATH." && exit 2;
-
-[[ ! -d ${DP_DIR} ]] && echo "* ERROR - Directory ${DP_DIR} doesn't exist." && exit 2;
-
-echo "* Downloading latest drupal.";
+# Download and extract drupal
+echo "* Downloading drupal.";
 
 wget ${DP_URL} -O ${DP_DIR}/${DP_FILE} > /dev/null 2>&1
 [[ $? > 0 ]] && echo "* ERROR - There was an error getting ${DP_URL}." && exit 2;
@@ -76,14 +78,16 @@ wget ${DP_URL} -O ${DP_DIR}/${DP_FILE} > /dev/null 2>&1
 gtar zxvf ${DP_DIR}/${DP_FILE} -C ${DP_DIR} --strip=1 > /dev/null 2>&1
 [[ $? > 0 ]] && echo "* ERROR - There was an error extracting ${DP_FILE} to ${DP_DIR}." && exit 2;
 
+# Configure drupal
 echo "* Configuring drupal.";
 
 cp ${DP_DIR}/sites/default/default.settings.php ${DP_DIR}/sites/default/settings.php
 chown -R www:www ${DP_DIR}
 chmod 666 ${DP_DIR}/sites/default/settings.php
 
-sm-create-db mysql ${DP_DB}
+# Create drupal database and user pass
+sm-create-db -u${DB_USER} -p${DB_PASS} mysql ${DP_DB}
 
-sm-create-dbuser mysql ${DP_USER} ${DP_PASS} ${DP_DB}
+sm-create-dbuser -u${DB_USER} -p${DB_PASS} mysql ${DP_USER} ${DP_PASS} ${DP_DB}
 
 echo "* Visit http://x.x.x.x/install.php to finish the install.";
