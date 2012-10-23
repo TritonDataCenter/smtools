@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 #
-# Installs latest wordpress in SmartMachine directory.
+# Installs latest wordpress in destination directory, and
+# creates mysql user and database for wordpress.
 # Requirements: Must have HTTP virtual host already setup.
 # Joyent 2012.
 
@@ -44,29 +45,31 @@ else
 fi
 
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+DB_USER=${DB_USER:-root};
+DB_PASS=${DB_PASS:-`mdata-get mysql_pw`};
 WP_USER=wp_$(zonename | awk -F\- '{ print $5 }');
 WP_PASS=$(od -An -N8 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
 WP_DB=wp_$(od -An -N3 -x /dev/random | head -1 | sed 's/^[ \t]*//' | tr -d ' ');
 WP_FILE="latest.tar.gz";
 WP_URL="http://wordpress.org/${WP_FILE}";
 
-hash wget &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - wget was not found in your PATH." && exit 2;
+# Check for tools in PATH
+for i in wget gtar gsed sm-create-db sm-create-dbuser mysql; do
+	hash $i &>/dev/null
+	[[ $? -eq 1 ]] && echo "* ERROR - $i was not found in your PATH." && exit 2;
+done
 
-hash gtar &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - gtar was not found in your PATH." && exit 2;
+# Check if MySQL is running
+[[ ! `pgrep mysqld` ]] && echo "* ERROR - mysql must be running to create the database for wordpress." && exit 2;
 
-hash gsed &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - gsed was not found in your PATH." && exit 2;
+# Check that we can connect with DB_USER DB_PASS
+mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1
+[[ $? -eq 1 ]] && echo "* ERROR - Can't connect to mysql with username password specified." && exit 2;
 
-hash sm-create-db &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - sm-create-db was not found in your PATH." && exit 2;
+# Make destination directory if it doesn't exist
+[[ ! -d ${WP_DIR} ]] && mkdir ${WP_DIR};
 
-hash sm-create-dbuser &>/dev/null
-[[ $? -eq 1 ]] && echo "* ERROR - sm-create-dbuser was not found in your PATH." && exit 2;
-
-[[ ! -d ${WP_DIR} ]] && echo "* ERROR - Directory ${WP_DIR} doesn't exist." && exit 2;
-
+# Download and extract wordpress
 echo "* Downloading latest wordpress.";
 
 wget ${WP_URL} -O ${WP_DIR}/${WP_FILE} > /dev/null 2>&1
@@ -75,6 +78,7 @@ wget ${WP_URL} -O ${WP_DIR}/${WP_FILE} > /dev/null 2>&1
 gtar zxvf ${WP_DIR}/${WP_FILE} -C ${WP_DIR} --strip=1 > /dev/null 2>&1
 [[ $? > 0 ]] && echo "* ERROR - There was an error extracting ${WP_FILE} to ${WP_DIR}." && exit 2;
 
+# Configure wordpress
 echo "* Configuring wordpress.";
 
 mv ${WP_DIR}/wp-config-sample.php ${WP_DIR}/wp-config.php
@@ -83,8 +87,9 @@ gsed -i "s/database_name_here/${WP_DB}/g" ${WP_DIR}/wp-config.php
 gsed -i "s/username_here/${WP_USER}/g" ${WP_DIR}/wp-config.php
 gsed -i "s/password_here/${WP_PASS}/g" ${WP_DIR}/wp-config.php
 
-sm-create-db mysql ${WP_DB}
+# Create database, user and pass
+sm-create-db -u${DB_USER} -p${DB_PASS} mysql ${WP_DB}
 
-sm-create-dbuser mysql ${WP_USER} ${WP_PASS} ${WP_DB}
+sm-create-dbuser -u${DB_USER} -p${DB_PASS} mysql ${WP_USER} ${WP_PASS} ${WP_DB}
 
 echo "* Visit http://x.x.x.x/wp-admin/install.php to finish the install.";
