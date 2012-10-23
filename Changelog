@@ -10,3 +10,7 @@ smtools-x
 smtools-x
 * fixed sm-summary bug pulling dataset info
 * added sm-tune-mysql
+
+smtools-x
+* fixed sm-install-wordpress IMAGE-42
+* fixed sm-install-drupal
