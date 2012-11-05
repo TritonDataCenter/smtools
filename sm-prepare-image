@@ -13,6 +13,7 @@ fi
 if [ "$1" == "-y" ]; then
   # Unattended mode, automate read prompts
   yn_start=y
+  yn_nfs=y
   yn_subips=y
   yn_halt=y
 fi
@@ -173,6 +174,38 @@ cat > /etc/hosts <<EOF
 ::1        localhost
 127.0.0.1  localhost loghost
 EOF
+}
+
+echo
+echo "=> Checking for possible NFS configuration"
+{
+nfs_state=$(svcs -Ho state nfs/client 2>/dev/null)
+if [ $? -eq 0 ] && [ "${nfs_state}" == "online" ]; then
+  nfs_mounts=$(awk '{if($4~/nfs/ && $1!~/^#/) print $3}' /etc/vfstab)
+  if [ ${nfs_mounts} ]; then
+    cat <<EOF
+
+You have enabled the NFS client SMF service ('nfs/client') and have live
+NFS mounts defined in /etc/vfstab. If, for some reason, the NFS server
+is not available when a new machine is being provisioned, the provision
+will fail. It is recommended to not enable 'nfs/client' by default, but
+do it in a /var/zoneinit/includes so that NFS still gets enabled, but
+it will not hinder the provisioning process itself. If you do not need
+NFS support at all, it's suggested to break out right now (Ctrl+C) and
+disable 'nfs/client' yourself, then re-run this script.
+
+EOF
+    [ ${yn_nfs} ] || read -p "Disable NFS client now, and enable in provisioner only? Y/n " yn_nfs
+
+    if [[ -z "${yn_nfs}" || "${yn_nfs}" =~ [yY] ]]; then
+      svcadm disable nfs/client >/dev/null 2>&1
+      cat >/var/zoneinit/includes/09-nfs.sh <<EOF
+log "enabling NFS client"
+svcadm enable -r nfs/client
+EOF
+    fi
+  fi
+fi
 }
 
 echo
