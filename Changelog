@@ -14,3 +14,4 @@ smtools-x
 smtools-x
 * fixed sm-install-wordpress IMAGE-42
 * fixed sm-install-drupal
+* Added sm-lsof, removed sm-pcp
