@@ -283,6 +283,10 @@ fi
 
 ### Action starts here
 
+## Change PWD to a safe directory
+
+cd /var/tmp
+
 ## Create a backup directory
 if [ ! -d ${backup_dir} ]; then
   /usr/bin/mkdir -p ${backup_dir}
