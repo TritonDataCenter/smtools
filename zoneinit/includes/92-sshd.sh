@@ -9,13 +9,14 @@
 
 if awk '/^HostKey/ {print $2}' /etc/ssh/sshd_config | grep '/etc/ssh' > /dev/null; then
   log "generating a new pair of SSH keys"
-  /lib/svc/method/sshd -c >/dev/null || \
-    error "SSH key refresh failed."
+  /lib/svc/method/sshd -c >/dev/null
 fi
 
 if [ ${SSH_ALLOW_PASSWORDS} ]; then
   log "enabling password authentication in SSH"
-  sed '/^PasswordAuthentication/s/[nN][oO]$/yes/' \
-    /etc/ssh/sshd_config > /tmp/sshd_config.tmp && \
-    mv /tmp/sshd_config.tmp /etc/ssh/sshd_config
+  if sed '/^PasswordAuthentication/s/[nN][oO]$/yes/' \
+    /etc/ssh/sshd_config > /etc/ssh/sshd_config.tmp; then
+    mv /etc/ssh/sshd_config{.tmp,}
+  fi
+  rm -f /etc/ssh/sshd_config.tmp
 fi

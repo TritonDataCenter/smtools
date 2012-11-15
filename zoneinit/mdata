@@ -1,0 +1,100 @@
+#!/usr/bin/bash
+
+set -o xtrace
+
+user_data=/var/svc/mdata-user-data
+user_script=/var/svc/mdata-user-script
+
+case "${SMF_FMRI}" in
+
+*execute*)
+
+  # Only execute the user-script is it exists
+
+  status=0
+  if [ -x ${user_script} ]; then
+    ${user_script}
+    [ $? -gt 0 ] && status=95
+  fi
+
+  # Finish the provisioning process (if the case)
+
+  if [ -e /var/svc/provisioning ]; then
+    if [ ${status} -eq 0 ]; then
+      # If 'provision_ongoing' exists, we assume the user wants to control
+      # the final 'success' flag himself and will rename the 'provisioning'
+      # file as appropriate. Otherwise, announce success ourselves.
+      [ -e /var/svc/provision_ongoing ] || mv /var/svc/provision{ing,_success}
+    else
+      mv /var/svc/provision{ing,_failure}
+    fi
+  fi
+
+  exit ${status}
+   
+  ;;
+
+*fetch*)
+
+  [ -x /usr/sbin/mdata-get ] \
+    || ( echo "Metadata mdata-get tool not found.";  exit 95 )
+
+  # Wait up to 30 seconds for the metadata socket to show up
+
+  timer=30
+  while [ $((timer--)) -gt 0 ]; do
+    [ -e /var/run/smartdc/metadata.sock ] && break || sleep 1
+  done
+
+  [ -e /var/run/smartdc/metadata.sock ] \
+    || ( echo "No metadata socket file, skipping metadata loading."; exit 0 )
+
+  echo "Retrieving metadata user-data"
+  /usr/sbin/mdata-get user-data >${user_data}.new
+  case $? in
+    0)
+      echo "Metadata user-data successfuly retrieved."
+      mv ${user_data}{.new,}
+      ;;
+    1)
+      echo "Metadata user-data not defined."
+      rm -f ${user_data}{,.new}
+      ;;
+    *)
+      echo "Metadata couldn't be retrieved."
+      exit 95
+      ;;
+  esac
+
+  echo "Retrieving metadata user-script..."
+  /usr/sbin/mdata-get user-script >${user_script}.new
+  case $? in
+    0)
+      echo "Metadata user-script successfuly retrieved."
+      mv ${user_script}{.new,}
+      # Only make a non-empty script executable
+      [ -z "$(cat ${user_script})" ] || chmod +x ${user_script}
+      ;;
+    1)
+      echo "Metadata user-script not defined."
+      rm -f ${user_script}{,.new}
+      ;;
+    *)
+      echo "Metadata couldn't be retrieved."
+      exit 95
+      ;;
+  esac
+
+  # Enable the execute service unconditionally, so that the final provisioning
+  # hook gets executed (regardless of whether a user script exists or not).
+
+  svcadm enable smartdc/mdata:execute
+  ;;
+
+*)
+
+  echo "Invalid context, must be executed under SMF."
+  exit 95
+  ;;
+
+esac

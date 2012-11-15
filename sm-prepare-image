@@ -22,7 +22,9 @@ fi
 
 zoneinit_source=@PREFIX@/lib/zoneinit
 zoneinit_home=@VARBASE@/zoneinit
-zoneinit_files=(zoneinit zoneinit.xml includes)
+zoneinit_files=(zoneinit zoneinit.json zoneinit.xml includes)
+mdata_home=@VARBASE@/svc
+mdata_files=(mdata mdata.xml)
 
 ### Bits to look for
 {
@@ -199,10 +201,7 @@ EOF
 
     if [[ -z "${yn_nfs}" || "${yn_nfs}" =~ [yY] ]]; then
       svcadm disable nfs/client >/dev/null 2>&1
-      cat >/var/zoneinit/includes/09-nfs.sh <<EOF
-log "enabling NFS client"
-svcadm enable -r nfs/client
-EOF
+      enable_nfs=yes
     fi
   fi
 fi
@@ -265,6 +264,22 @@ for zoneinit_file in ${zoneinit_files[@]}; do
   fi
 done
 
+for mdata_file in ${mdata_files[@]}; do
+  if [ -e ${zoneinit_source}/${mdata_file} ]; then
+    cp -Rp ${zoneinit_source}/${mdata_file} ${mdata_home}/
+  else
+    echo "==> WARNING: required file ${mdata_file} not found"
+  fi
+done
+
+if [ ${enable_nfs} ]; then
+  cat > ${zoneinit_home}/includes/09-nfs.sh <<EOF
+log "enabling NFS client"
+svcadm enable -r nfs/client
+EOF
+fi
+
+svccfg import ${mdata_home}/mdata.xml
 svccfg import ${zoneinit_home}/zoneinit.xml
 svcadm enable zoneinit
 }
