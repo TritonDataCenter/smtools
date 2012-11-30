@@ -390,7 +390,7 @@ hash -r
 
 echo "* Updating tool configuration..."
 for user in /root /home/admin /home/node; do
-  gsed -r -i '/^(MANPATH|alias man)/d' ${user}/.{profile,bashrc} 2>/dev/null || true
+  /usr/bin/sed -E -i '/^(MANPATH|alias man)/d' ${user}/.{profile,bashrc} 2>/dev/null || true
   [ -e ${user}/.profile ] && cat >> ${user}/.profile <<EOF
 
 # man configuration
@@ -417,10 +417,10 @@ fi
 
 ## Check for missing packages
 {
-sed -e '
-  s/php5(-|$)/php${php_version_default}\1/g;
+/usr/bin/sed -E -e '
+  s/php5-/php'${php_version_default}'-/g;
   s/py(thon)?2[456]/py\1'${python_version_default}'/g;
-  s/^(capistrano|mongrel|rails|rake|rubyforge|rubygems|thin)/ruby18-\1/g;
+  s/^(capistrano|mongrel|rails|rake|rubyforge|rubygems|thin)/ruby'${ruby_version_default}'-\1/g;
   s/p5-IO-stty/p5-IO-Stty/;
   s/joyent-tools/smtools/;
   s/postgresql[0-9][0-9]/postgresql'${pgsql_version_default/\./}'/g;
