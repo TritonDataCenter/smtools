@@ -9,25 +9,18 @@ case "${SMF_FMRI}" in
 
 *execute*)
 
+  # If we got as far as running the user-script the 'provision' was a success
+  # from here out a failure will leave the zone running.
+  if [ -f /var/svc/provisioning ]; then
+    mv /var/svc/provision{ing,_success}
+  fi
+
   # Only execute the user-script is it exists
 
   status=0
   if [ -x ${user_script} ]; then
     ${user_script}
     [ $? -gt 0 ] && status=95
-  fi
-
-  # Finish the provisioning process (if the case)
-
-  if [ -e /var/svc/provisioning ]; then
-    if [ ${status} -eq 0 ]; then
-      # If 'provision_ongoing' exists, we assume the user wants to control
-      # the final 'success' flag himself and will rename the 'provisioning'
-      # file as appropriate. Otherwise, announce success ourselves.
-      [ -e /var/svc/provision_ongoing ] || mv /var/svc/provision{ing,_success}
-    else
-      mv /var/svc/provision{ing,_failure}
-    fi
   fi
 
   exit ${status}
@@ -48,6 +41,9 @@ case "${SMF_FMRI}" in
 
   [ -e /var/run/smartdc/metadata.sock ] \
     || ( echo "No metadata socket file, skipping metadata loading."; exit 0 )
+
+  # Update sysinfo to ensure values that come from metadata are populated.
+  /usr/bin/sysinfo -fu
 
   echo "Retrieving metadata user-data"
   /usr/sbin/mdata-get user-data >${user_data}.new
