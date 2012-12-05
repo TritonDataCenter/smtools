@@ -3,8 +3,7 @@ log "determine machine parameters and configuration"
 # Little helper to overcome the problem that mdata-get doesn't use stderr
 mdata() {
   set -o pipefail
-  mdata-get $1 | grep -v '^No metadata'
-  return $?
+  output=$(mdata-get $1 2>/dev/null) && echo -e "${output}" || return 1
 }
 
 log "checking for duplicate IPs"
@@ -32,6 +31,8 @@ if [ ! ${USE_ZONECONFIG} ]; then
   while : ${i:=-1}; ((i++)); IFACE=$(mdata sdc:nics.${i}.interface); [ ${IFACE} ]; do
     NET_INTERFACES=(${NET_INTERFACES[@]} ${IFACE})
     THIS_IP=$(mdata sdc:nics.${i}.ip)
+    # only use valid IPs
+    [[ "${THIS_IP}." =~ ^(([01]?[0-9]{1,2}|2[0-4][0-9]|25[0-5])\.){4}$ ]] || continue
     eval "${IFACE}_IP=${THIS_IP}"
     case "$(mdata sdc:nics.${i}.nic_tag)" in
       external)
