@@ -79,6 +79,9 @@ else
 
   # We should already have PUBLIC_IP & PRIVATE_IP set via zoneconfig
 
+  PUBLIC_IPS=(${PUBLIC_IP})
+  PRIVATE_IPS=(${PRIVATE_IP})
+
 fi
 
 # Use mdata-get to retrieve passwords for users needed by the image
