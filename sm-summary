@@ -9,9 +9,21 @@ echo "* Gathering SmartMachine summary..";
 SM_UUID=$(zonename);
 SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
 SM_HOSTNAME=$(hostname);
-[[ -f /etc/product ]] && SM_IMAGE=$(cat /etc/product | grep Image | awk '{ print $2 " " $3 }') || SM_IMAGE="NA";
-[[ -f /etc/product ]] && SM_IMAGE=${SM_IMAGE:-$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }')} || SM_IMAGE="NA";
-[[ -f /etc/product ]] && SM_IMAGE=${SM_IMAGE:-NA} || SM_IMAGE="NA";
+
+if [[ -f /etc/product ]]; then
+        SM_IMAGE=$(cat /etc/product | grep "^Image:" | awk -F': ' '{ print $2 }') || SM_IMAGE="NA";
+        SM_IMAGE=${SM_IMAGE:-$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }')} || SM_IMAGE="NA";
+        SM_IMAGE=${SM_IMAGE:-NA} || SM_IMAGE="NA";
+        SM_DOC=$(cat /etc/product | grep "^Documentation:" | awk -F': ' '{ print $2 }') || SM_DOC="NA";
+        SM_DOC=${SM_DOC:-NA} || SM_DOC="NA";
+        SM_BASEIMAGE=$(cat /etc/product | grep "^Base Image:" | awk -F': ' '{ print $2 }') || SM_BASEIMAGE="NA";
+        SM_BASEIMAGE=${SM_BASEIMAGE:-NA} || SM_BASEIMAGE="NA";
+else
+        SM_IMAGE="NA";
+        SM_DOC="NA";
+        SM_BASEIMAGE="NA";
+fi
+
 [[ -f /opt/local/etc/pkg_install.conf ]] && SM_PKGSRC=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || SM_PKGSRC="Not installed";
 SM_BUILD=$(uname -v);
 SM_NPROCS=$(kstat -p -n nprocs_zone_${SM_ID} -s usage | awk '{ print $2 }');
@@ -27,9 +39,11 @@ SM_DISKUSED=$(df -P -h / | tail -1 | awk '{ print $5 }');
 cat << EOF
 SM UUID             ${SM_UUID}
 SM ID               ${SM_ID}
-Hostname	    ${SM_HOSTNAME}
+Hostname            ${SM_HOSTNAME}
 SmartOS build       ${SM_BUILD} 
 Image               ${SM_IMAGE}
+Base Image          ${SM_BASEIMAGE}
+Documentation       ${SM_DOC}
 Pkgsrc              ${SM_PKGSRC}
 Processes           ${SM_NPROCS}
 Memory (RSS) Cap    ${SM_MEMCAP}M
