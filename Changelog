@@ -17,4 +17,5 @@ smtools-x
 * Added sm-lsof, removed sm-pcp
 
 smtools-x
-* Added new sm-summary IMAGE-63 -dc
+* Updated sm-summary IMAGE-63
+* Updated sm-meminfo SYSOPS-5344

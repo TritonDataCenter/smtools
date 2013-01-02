@@ -52,26 +52,10 @@ function get_tmp_used {
         tmp_used=$( df -k /tmp | /usr/xpg4/bin/awk '{ if ($1 ~ /swap/) print $3}' )
 }
 function get_mem_cap {
-        mem_cap=$( kstat -p -c zone_caps -n lockedmem_zone_$zoneid -s value | awk '{print $2}' )
-        if [ $(echo "v=$mem_cap;t=137438953472;r=0;if(v>t)r=1;r"|bc) -gt 0 ]
-        then
-                get_swap_cap
-                case $swap_cap in
-                        536870912) mem_cap=268435456;;
-                        1073741824) mem_cap=536870912;;
-                        2147483648) mem_cap=1073741824;;
-                        4294967296) mem_cap=2147483648;;
-                        6442450944) mem_cap=4294967296;;
-                        12884901888) mem_cap=8589934592;;
-                        25769803776) mem_cap=17179869184;;
-                        51539607552) mem_cap=34359738368;;
-                        *) mem_cap=$((swap_cap/2));
-                esac
-        fi
+        mem_cap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2);
 }
 function get_mem_used {
-        mem_used=$( /usr/bin/prstat -Z -s rss 1 1 | \
-                   /usr/xpg4/bin/awk -v zone=$zone '$8 ~ zone { rss = $4+0 } END {print (rss*1024*1024)}' )
+	mem_used=$(kstat -c zone_memory_cap -s rss -p | cut -f2);
 }
 function convert {
         value=$1
