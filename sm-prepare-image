@@ -40,6 +40,7 @@ delete_files=(
   /var/spool/postfix/hold
   /var/spool/postfix/incoming
   /var/svc/log
+  /var/svc/provision*
   /var/log:*log.*
 )
 
