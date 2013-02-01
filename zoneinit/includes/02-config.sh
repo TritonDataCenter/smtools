@@ -21,7 +21,8 @@ if [ ! ${USE_ZONECONFIG} ]; then
   # information we need for provisioning
 
   ZONENAME=$(mdata sdc:zonename)
-  HOSTNAME=$(mdata sdc:hostname || echo "${ZONENAME}.$(mdata sdc:dns_domain)")
+  HOSTNAME=$(mdata sdc:hostname || echo "${ZONENAME}")
+  DOMAINNAME=$(mdata sdc:dns_domain || echo "local")
 
   while : ${i:=-1}; ((i++)); SERVER=$(mdata sdc:resolvers.${i}); [ ${SERVER} ]; do
     RESOLVERS=(${RESOLVERS[@]} ${SERVER})
@@ -63,6 +64,7 @@ else
 
   : ${ZONENAME:=$(zonename)}
   : ${HOSTNAME:=${ZONENAME}.local}
+  : ${DOMAINNAME:=${HOSTNAME##*.}}
 
   [ ${RAM_IN_BYTES} ] || RAM_IN_BYTES=$( kstat -p -c zone_memory_cap -s physcap | awk '{print $2}' )
   [ ${RAM_IN_BYTES} -gt 0 2>/dev/null ] || RAM_IN_BYTES=134217728

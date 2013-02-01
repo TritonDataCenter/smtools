@@ -1,16 +1,16 @@
 log "setting hostname, IPs and resolvers"
 
-echo "${HOSTNAME}" > /etc/nodename
-/bin/hostname ${HOSTNAME}
+echo "${HOSTNAME}.${DOMAINNAME}" > /etc/nodename
+/bin/hostname ${HOSTNAME}.${DOMAINNAME}
 
-if sed '/nameserver/d' /etc/resolv.conf > /etc/resolv.conf.tmp 2>/dev/null; then
-  mv /etc/resolv.conf{.tmp,}
-fi
-rm -f /etc/resolv.conf.tmp
-
+(
+echo "domain ${DOMAINNAME}"
+/bin/sed -E -e '/nameserver|domain/d' /etc/resolv.conf 2>/dev/null
 for HOST in ${RESOLVERS[@]}; do
-  echo "nameserver ${HOST}" >> /etc/resolv.conf
+  echo "nameserver ${HOST}"
 done
+) > /etc/resolv.conf.tmp
+mv /etc/resolv.conf{.tmp,}
 
 for IP in ${PUBLIC_IPS[@]}; do
   echo "${IP}"$'\t'"${HOSTNAME}" >> /etc/inet/hosts
