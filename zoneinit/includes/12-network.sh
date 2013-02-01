@@ -3,7 +3,6 @@ log "setting hostname, IPs and resolvers"
 echo "${HOSTNAME}" > /etc/nodename
 /bin/hostname ${HOSTNAME}
 
-RESOLVERS=(${RESOLVERS})
 if sed '/nameserver/d' /etc/resolv.conf > /etc/resolv.conf.tmp 2>/dev/null; then
   mv /etc/resolv.conf{.tmp,}
 fi

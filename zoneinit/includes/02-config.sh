@@ -22,7 +22,10 @@ if [ ! ${USE_ZONECONFIG} ]; then
 
   ZONENAME=$(mdata sdc:zonename)
   HOSTNAME=$(mdata sdc:hostname || echo "${ZONENAME}.$(mdata sdc:dns_domain)")
-  RESOLVERS=$(mdata sdc:resolvers || echo "8.8.8.8 8.8.4.4")
+
+  while : ${i:=-1}; ((i++)); SERVER=$(mdata sdc:resolvers.${i}); [ ${SERVER} ]; do
+    RESOLVERS=(${RESOLVERS[@]} ${SERVER})
+  done
 
   RAM_IN_BYTES=$(echo "$(mdata sdc:max_physical_memory)*1024^2" | bc 2>/dev/null)
   SWAP_IN_BYTES=$(echo "$(mdata sdc:max_swap)*1024^2" | bc 2>/dev/null)
@@ -60,7 +63,6 @@ else
 
   : ${ZONENAME:=$(zonename)}
   : ${HOSTNAME:=${ZONENAME}.local}
-  : ${RESOLVERS:=8.8.8.8 8.8.4.4}
 
   [ ${RAM_IN_BYTES} ] || RAM_IN_BYTES=$( kstat -p -c zone_memory_cap -s physcap | awk '{print $2}' )
   [ ${RAM_IN_BYTES} -gt 0 2>/dev/null ] || RAM_IN_BYTES=134217728
@@ -81,8 +83,12 @@ else
 
   PUBLIC_IPS=(${PUBLIC_IP})
   PRIVATE_IPS=(${PRIVATE_IP})
+  RESOLVERS=(${RESOLVERS})
 
 fi
+
+# Make sure *some* resolvers are used
+[ ${#RESOLVERS[@]} -gt 0 ] || RESOLVERS=(8.8.8.8 8.8.4.4)
 
 # Use mdata-get to retrieve passwords for users needed by the image
 # put them in respective variables (e.g. for 'admin' use $ADMIN_PW)
