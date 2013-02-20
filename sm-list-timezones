@@ -1,8 +1,9 @@
 #!/usr/bin/bash
 #
 # List timezones available to a SmartMachine.
-# Joyent 2012.
+# Joyent 2013.
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 ZONENAME=$(zonename);
 

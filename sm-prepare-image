@@ -3,7 +3,7 @@
 # sm-prepare-image
 # A script to clean up the file system of an existing SmartMachine
 # and prepare it for turning into a provisionable SmartOS image.
-# Joyent 2012
+# Joyent 2013
 
 set -e
 if [ ${DEBUG} ]; then

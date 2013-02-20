@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Set the hostname of a SmartMachine.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -14,6 +14,7 @@ exit 2;
 
 [[ ! $1 ]] && usage;
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 HOSTNAME=$1
 ZONENAME=$(zonename);

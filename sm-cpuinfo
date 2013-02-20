@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Provides SmartMachine cpu utilization information.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -27,6 +27,7 @@ while getopts "p" OPTION; do
 	esac
 done
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 SM_UUID=$(zonename);
 SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');

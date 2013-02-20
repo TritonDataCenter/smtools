@@ -1,8 +1,9 @@
 #!/usr/bin/bash
 # pkghelp
 # A dummy wrapper to educate about the pkgin tool
-# Joyent 2012
+# Joyent 2013
 
+export LANG=C
 command=$(basename $0)
 
 cat <<EOF

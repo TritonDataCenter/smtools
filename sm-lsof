@@ -3,7 +3,7 @@
 # sm-lsof - A lsof replacement for SmartMachine's and 
 # a simple alternative to pfiles, fuser.  For detailed
 # information of a process use 'pfiles <pid>'.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -53,6 +53,7 @@ while getopts "pfP:F:o:i:d:" OPTION; do
 	esac
 done
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 [[ $# -eq 0 ]] && usage;
 

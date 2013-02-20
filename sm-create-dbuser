@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Create a MySQL/PostgreSQL database user for a SmartMachine.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -49,6 +49,7 @@ else
 	usage;
 fi
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 [[ ${DB_NAME} = "all" ]] && DB_NAME='*';
 [[ ${DB_TYPE} = "postgresql" ]] && [[ ${DB_NAME} = "*" ]] && echo "* ERROR - 'all' can only be used with MySQL." && exit 2; 
