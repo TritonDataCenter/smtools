@@ -37,7 +37,7 @@ KSTAT_CPU_USED=$(kstat -p -c zone_caps -n cpucaps_zone_${SM_ID} -s usage | awk '
 CPU_USED=$(echo -e "scale=2; (${KSTAT_CPU_USED}/${KSTAT_CPU_CAP})*100" | bc 2>/dev/null | sed 's/\.[0-9]*//');
 [[ ! ${CPU_USED} ]] && CPU_USED="NA";
 
-CPU_UTIL=$(/usr/bin/prstat -Z 1 1 | /usr/xpg4/bin/awk -v zone=${SM_UUID} '$8 ~ zone { print $7 }' | sed 's/%//g')
+CPU_UTIL=$(/usr/bin/prstat -Z 1 1 | awk -v zone=${SM_UUID} '$8 ~ zone { print $7 }' | sed 's/%//g')
 
 echo "* Gathering cpu infomation for ${SM_UUID}..";
 [ "${MACHINE}" ] && echo "cpu_used:${CPU_USED}" || echo "CPU Cap Used: ${CPU_USED} %"
