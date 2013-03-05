@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Provides SmartMachine memory utilization information.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -38,6 +38,7 @@ else
 	usage;
 fi
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 zone=$(zonename);
 zoneid=$(zoneadm list -p | awk -F: '{print $1}')
@@ -49,7 +50,7 @@ function get_virt_used {
         virt_used=$( kstat -p -c zone_caps -n swapresv_zone_$zoneid -s usage | awk '{print $2}' )
 }
 function get_tmp_used {
-        tmp_used=$( df -k /tmp | /usr/xpg4/bin/awk '{ if ($1 ~ /swap/) print $3}' )
+        tmp_used=$( df -k /tmp | awk '{ if ($1 ~ /swap/) print $3}' )
 }
 function get_mem_cap {
         mem_cap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2);

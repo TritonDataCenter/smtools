@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Create a MySQL/PostgreSQL database for a SmartMachine.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -44,6 +44,7 @@ else
 	usage;
 fi
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
 create_mysqldb() {

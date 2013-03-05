@@ -1,8 +1,9 @@
 #!/usr/bin/bash
 #
 # Provides SmartMachine summary of information.
-# Joyent 2012.
+# Joyent 2013.
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
 echo "* Gathering SmartMachine summary..";
@@ -27,8 +28,8 @@ fi
 [[ -f /opt/local/etc/pkg_install.conf ]] && SM_PKGSRC=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || SM_PKGSRC="Not installed";
 SM_BUILD=$(uname -v);
 SM_NPROCS=$(kstat -p -n nprocs_zone_${SM_ID} -s usage | awk '{ print $2 }');
-SM_MEMCAP=$(kstat -p -c zone_caps -n lockedmem_zone_${SM_ID} -s value | awk '{print $2/1024/1024 }');
-SM_MEMUSED=$(prstat -Z -s rss 1 1 | awk -v zone=${SM_UUID} '$8 ~ zone { printf("%d", $4 ) }');
+SM_MEMCAP=$(kstat -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ printf("%d", $1/1024/1024)}');
+SM_MEMUSED=$(kstat -c zone_memory_cap -s rss -p | cut -f2 | awk '{ printf("%d", $1/1024/1024) }');
 SM_MEMFREE=$(echo "${SM_MEMCAP}-${SM_MEMUSED}" | bc);
 SM_SWAPCAP=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s value | awk '{ print $2/1024/1024 }');
 SM_SWAPUSED=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s usage | awk '{ printf("%d", $2/1024/1024) }');

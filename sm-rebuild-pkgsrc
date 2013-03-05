@@ -2,10 +2,11 @@
 # rebuild-pkgsrc
 # Reconstructs the userland pkgsrc software by using a new bootstrap image
 # and re-installing all packages from a new package set.
-# Joyent 2012
+# Joyent 2013
 
 # Debugging config
 
+export LANG=C
 backup_dir=/var/tmp/machine-upgrade-$$
 error_log=${backup_dir}.log
 exec 5>${error_log}

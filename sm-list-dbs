@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # List MySQL/PostgreSQL databases for a SmartMachine.
-# Joyent 2012.
+# Joyent 2013.
 
 usage() {
 cat << EOF
@@ -42,6 +42,7 @@ else
 	usage;
 fi
 
+export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 ZONENAME=$(zonename);
 
