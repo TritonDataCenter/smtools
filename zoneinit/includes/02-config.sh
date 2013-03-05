@@ -63,8 +63,8 @@ else
   fi
 
   : ${ZONENAME:=$(zonename)}
-  : ${HOSTNAME:=${ZONENAME}.local}
-  : ${DOMAINNAME:=${HOSTNAME##*.}}
+  : ${HOSTNAME:=${ZONENAME}}
+  : ${DOMAINNAME:=local}
 
   [ ${RAM_IN_BYTES} ] || RAM_IN_BYTES=$( kstat -p -c zone_memory_cap -s physcap | awk '{print $2}' )
   [ ${RAM_IN_BYTES} -gt 0 2>/dev/null ] || RAM_IN_BYTES=134217728

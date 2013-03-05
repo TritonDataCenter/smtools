@@ -1,23 +1,18 @@
 log "setting hostname, IPs and resolvers"
 
-echo "${HOSTNAME}.${DOMAINNAME}" > /etc/nodename
-/bin/hostname ${HOSTNAME}.${DOMAINNAME}
+echo "${HOSTNAME}" > /etc/nodename
+/bin/hostname ${HOSTNAME}
 
 (
-echo "domain ${DOMAINNAME}"
-/bin/sed -E -e '/nameserver|domain/d' /etc/resolv.conf 2>/dev/null
+/bin/sed '/nameserver/d' /etc/resolv.conf 2>/dev/null
 for HOST in ${RESOLVERS[@]}; do
   echo "nameserver ${HOST}"
 done
 ) > /etc/resolv.conf.tmp
 mv /etc/resolv.conf{.tmp,}
 
-for IP in ${PUBLIC_IPS[@]}; do
-  echo "${IP}"$'\t'"${HOSTNAME}" >> /etc/inet/hosts
-done
-for IP in ${PRIVATE_IPS[@]}; do
-  echo "${IP}"$'\t'"${ZONENAME}"$'\t'"loghost" >> /etc/inet/hosts
-done
+sed '/^127\.0\.0\.1/s/$/ '${HOSTNAME}'/' /etc/inet/hosts > /etc/inet/hosts.tmp
+mv /etc/inet/hosts{.tmp,}
 
 log "checking if we can reach the Internets"
 
