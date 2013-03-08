@@ -29,7 +29,14 @@ ruby_version_default=@RUBY_VERSION_DEFAULT@
 
 # End of definitions
 
-pkg_base=http://pkgsrc.joyent.com/${platform}/${release}/${arch}
+pkg_base=http://pkgsrc.joyent.com
+pkg_url=${pkg_base}/${platform}/${release}/${arch}
+if [[ ${platform} =~ SmartOS ]]; then
+  bootstrap_file=${platform}/bootstrap/bootstrap-${release}-${arch}.tar.gz
+else
+  bootstrap_file=${platform}/${release}/${arch}/bootstrap.tar.gz
+fi
+
 backup_tarball=${backup_dir}/opt_local.tgz
 backup_mydump=${backup_dir}/mysql.dump.gz
 backup_pgdump=${backup_dir}/postgresql.dump
@@ -82,7 +89,7 @@ cat <<EOF
 - This script upgrades userland software in /opt/local, using packages from 
   the following package set:
   
-    ${pkg_base}
+    ${pkg_url}
   
   In the process, your /opt/local path will be backed up, new bootstrap image
   will be downloaded and packages that you had installed, will be re-installed
@@ -355,15 +362,15 @@ cp -Rp /opt/local{.old,}/etc
 {
 echo "* Downloading new software bootstrap kit..."
 
-(cd / && ${fetch} ${pkg_base}/bootstrap.tar.gz 2>/dev/null |\
+(cd / && ${fetch} ${pkg_base}/${bootstrap_file} 2>/dev/null |\
  /usr/bin/gzcat | /usr/bin/tar -xf -)
 }
 
 ## Misc tool & config updates
 {
 echo "* Configuring package tools..."
-echo ${pkg_base}/All > /opt/local/etc/pkgin/repositories.conf
-echo PKG_PATH=${pkg_base}/All > /opt/local/etc/pkg_install.conf
+echo ${pkg_url}/All > /opt/local/etc/pkgin/repositories.conf
+echo PKG_PATH=${pkg_url}/All > /opt/local/etc/pkg_install.conf
 
 echo "* Re-installing base packages..."
 rm -f /var/db/pkgin/pkgin.db
@@ -492,7 +499,7 @@ cat <<EOF
 
 - Your SmartMachine was upgraded using packages from:
 
-  ${pkg_base}
+  ${pkg_url}
 
   The following directory holds backups taken before the upgrade - a tarball
   of /opt/local, list of packages installed and (where applicable) backups
