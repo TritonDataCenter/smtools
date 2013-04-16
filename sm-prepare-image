@@ -24,7 +24,7 @@ zoneinit_source=@PREFIX@/lib/zoneinit
 zoneinit_home=@VARBASE@/zoneinit
 zoneinit_files=(zoneinit zoneinit.json zoneinit.xml includes)
 mdata_home=@VARBASE@/svc
-mdata_files=(mdata mdata.xml)
+mdata_files=(mdata-fetch mdata-execute mdata.xml)
 
 ### Bits to look for
 {
