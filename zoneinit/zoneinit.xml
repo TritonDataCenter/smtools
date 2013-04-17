@@ -10,6 +10,9 @@
     <dependency name="filesystem" grouping="require_all" restart_on="error" type="service">
       <service_fmri value="svc:/system/filesystem/local" />
     </dependency>
+    <dependent name="zoneinit" grouping="require_all" restart_on="error">
+      <service_fmri value="svc:/smartdc/mdata:execute" />
+    </dependent>
     <exec_method type="method" name="start" exec="@VARBASE@/zoneinit/zoneinit" timeout_seconds="3600" />
     <exec_method type="method" name="stop" exec=":true" timeout_seconds="60" />
     <property_group name="startd" type="framework">
