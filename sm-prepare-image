@@ -280,6 +280,7 @@ svcadm enable -r nfs/client
 EOF
 fi
 
+svccfg delete -f mdata
 svccfg import ${mdata_home}/mdata.xml
 svccfg import ${zoneinit_home}/zoneinit.xml
 svcadm enable zoneinit
