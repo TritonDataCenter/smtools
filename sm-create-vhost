@@ -17,21 +17,27 @@ Arguments:
 Options:
    
     -s               SSL support.
+    -t               Tomcat support (proxy 8080 to localhost).
 
 EOF
-exit 2;
+exit 1;
 }
 
-while getopts "s" OPTION; do
+while getopts "st" OPTION; do
         case $OPTION in
                 s)
                         SSL="YES";
                         ;;
+		t)
+			TOMCAT="YES";
+			;;
                 *)
                         usage;
                         ;;
         esac
 done
+
+[[ ${SSL} ]] && [[ ${TOMCAT} ]] && echo "ERROR - Must specify -s or -t, not both." && exit 1;
 
 shift $(($OPTIND - 1))
 if [[ $# = 3 ]]; then
@@ -48,11 +54,49 @@ HOSTNAME=$(hostname);
 #HTTP_DOCROOT_PARENT=$(echo ${HTTP_DOCROOT} | sed 's,/*[^/]\+/*$,,');
 HTTP_CONFFILE="${HTTP_HOST}.conf";
 HTTP_SSLCONFFILE="${HTTP_HOST}-ssl.conf";
-APACHE_CONFDIR="/opt/local/etc/httpd/virtualhosts";
-NGINX_CONFDIR="/opt/local/etc/nginx/virtualhosts";
+APACHE_CONFDIR="/opt/local/etc/httpd";
+NGINX_CONFDIR="/opt/local/etc/nginx";
+APACHE_CONFDIR_VHOSTS="/opt/local/etc/httpd/virtualhosts";
+NGINX_CONFDIR_VHOSTS="/opt/local/etc/nginx/virtualhosts";
 IP_EXTERNAL=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
 
-apache_createconfig() {
+apache_create_tomcatconfig() {
+	TOMCAT_CONFIG="\
+<VirtualHost *:80>\n\
+  ServerName ${HTTP_HOST}\n\
+  ServerAlias www.${HTTP_HOST}\n\
+  ServerAlias *.${HTTP_HOST}\n\
+  DocumentRoot ${HTTP_DOCROOT}\n\
+  <Directory ${HTTP_DOCROOT}>\n\
+    Options Indexes IncludesNOEXEC FollowSymLinks MultiViews\n\
+    AllowOverride All\n\
+    Require all granted\n\
+  </Directory>\n\n\
+  ProxyPass /assets !\n\n\
+  ProxyRequests Off\n\
+  ProxyPreserveHost On\n\n\
+  <Proxy *>\n\
+    Order deny,allow\n\
+    Allow from all\n\
+  </Proxy>\n\n\
+  ProxyPass / http://localhost:8080/\n\
+  ProxyPassReverse / http://localhost:8080/\n\
+</VirtualHost>";
+
+	echo -ne "${TOMCAT_CONFIG}" > ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE}
+
+	cat << EOF 
+* Created Apache (Tomcat) configuration ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE}.
+  Settings:
+    Hosts:         ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port:          80
+    Docroot:       ${HTTP_DOCROOT}
+    Static Assets: ${HTTP_DOCROOT}/assets
+    Proxy:         Pass/Reverse to http://localhost:8080
+
+EOF
+}
+apache_create_config() {
 	APACHE_CONFIG="\
 <VirtualHost *:80>\n\
   ServerName ${HTTP_HOST}\n\
@@ -60,28 +104,24 @@ apache_createconfig() {
   ServerAlias *.${HTTP_HOST}\n\
   DocumentRoot ${HTTP_DOCROOT}\n\
   <Directory ${HTTP_DOCROOT}>\n\
-    Options -Indexes IncludesNOEXEC FollowSymLinks -MultiViews\n\
+    Options Indexes IncludesNOEXEC FollowSymLinks MultiViews\n\
     AllowOverride All\n\
-    Order allow,deny\n\
-    Allow from all\n\
+    Require all granted\n\
   </Directory>\n\
 </VirtualHost>";
 
-	echo -ne "${APACHE_CONFIG}" > ${APACHE_CONFDIR}/${HTTP_CONFFILE}
+	echo -ne "${APACHE_CONFIG}" > ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE}
 
 	cat << EOF 
-* Created Apache configuration ${APACHE_CONFDIR}/${HTTP_CONFFILE}.
+* Created Apache configuration ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE}.
   Settings:
-    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
-    Port: 80
+    Hosts:   ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port:    80
     Docroot: ${HTTP_DOCROOT}
-
-  For changes to take you will need to restart apache with
-  svcadm restart svc:/pkgsrc/apache.
 
 EOF
 }
-apache_createsslconfig() {
+apache_create_sslconfig() {
 	APACHE_CONFIG="\
 <VirtualHost ${IP_EXTERNAL}:443>\n\
   ServerName ${HTTP_HOST}\n\
@@ -89,34 +129,30 @@ apache_createsslconfig() {
   ServerAlias *.${HTTP_HOST}\n\
   DocumentRoot ${HTTP_DOCROOT}\n\
   <Directory ${HTTP_DOCROOT}>\n\
-    Options -Indexes IncludesNOEXEC FollowSymLinks -MultiViews\n\
+    Options Indexes IncludesNOEXEC FollowSymLinks MultiViews\n\
     AllowOverride All\n\
-    Order allow,deny\n\
-    Allow from all\n\
+    Require all granted\n\
   </Directory>\n\
   SSLEngine on\n\
-  SSLCertificateFile ${APACHE_CONFDIR}/${HTTP_HOST}.crt\n\
-  SSLCertificateKeyFile ${APACHE_CONFDIR}/${HTTP_HOST}.key\n\
+  SSLCertificateFile ${APACHE_CONFDIR_VHOSTS}/${HTTP_HOST}.crt\n\
+  SSLCertificateKeyFile ${APACHE_CONFDIR_VHOSTS}/${HTTP_HOST}.key\n\
 </VirtualHost>";
 
-	echo -ne "${APACHE_CONFIG}" > ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE}
+	echo -ne "${APACHE_CONFIG}" > ${APACHE_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE}
 
 	cat << EOF 
-* Created Apache (SSL) configuration ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE}.
+* Created Apache (SSL) configuration ${APACHE_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE}.
   Settings:
-    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
-    Port: 443 
-    Docroot: ${HTTP_DOCROOT}
-    SSL cert: ${APACHE_CONFDIR}/${HTTP_HOST}.crt
-    SSL key: ${APACHE_CONFDIR}/${HTTP_HOST}.key
-
-  For changes to take you will need to restart apache with
-  svcadm restart svc:/pkgsrc/apache.
+    Hosts:    ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port:     443 
+    Docroot:  ${HTTP_DOCROOT}
+    SSL cert: ${APACHE_CONFDIR_VHOSTS}/${HTTP_HOST}.crt
+    SSL key:  ${APACHE_CONFDIR_VHOSTS}/${HTTP_HOST}.key
 
 EOF
 }
 
-nginx_createconfig() {
+nginx_create_config() {
 	NGINX_CONFIG="\
 server {\n\
   listen 80;\n\
@@ -133,24 +169,19 @@ server {\n\
   }\n\
 }";
 
-	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR}/${HTTP_CONFFILE}
+	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE}
 	
 	cat << EOF 
-* Created Nginx configuration ${NGINX_CONFDIR}/${HTTP_CONFFILE}.
+* Created Nginx configuration ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE}.
   Settings:
-    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
-    Port: 80
+    Hosts:   ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port:    80
     Docroot: ${HTTP_DOCROOT}
-
-  For changes to take you will need to restart nginx with
-  svcadm restart svc:/pkgsrc/nginx.
-  If you want PHP support with nginx you will need to
-  svcadm enable svc:/pkgsrc/php-fpm.
 
 EOF
   
 }
-nginx_createsslconfig() {
+nginx_create_sslconfig() {
 	NGINX_CONFIG="\
 server {\n\
   listen 443;\n\
@@ -160,8 +191,8 @@ server {\n\
   #ssl_protocols  SSLv2 SSLv3 TLSv1;\n\
   #ssl_ciphers  ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP;\n\
   #ssl_prefer_server_ciphers   on;\n\
-  ssl_certificate ${NGINX_CONFDIR}/${HTTP_HOST}.crt;\n\
-  ssl_certificate_key ${NGINX_CONFDIR}/${HTTP_HOST}.key;\n\
+  ssl_certificate ${NGINX_CONFDIR}/ssl/${HTTP_HOST}.crt;\n\
+  ssl_certificate_key ${NGINX_CONFDIR}/ssl/${HTTP_HOST}.key;\n\
   \n\
   root ${HTTP_DOCROOT};\n\
   \n\
@@ -174,50 +205,155 @@ server {\n\
   }\n\
 }";
 
-	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE}
+	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE}
 
 	cat << EOF 
-* Created Nginx (SSL) configuration ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE}.
+* Created Nginx (SSL) configuration ${NGINX_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE}.
   Settings:
-    Hosts: ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
-    Port: 443 
-    Docroot: ${HTTP_DOCROOT}
-    SSL cert: ${NGINX_CONFDIR}/${HTTP_HOST}.crt
-    SSL key: ${NGINX_CONFDIR}/${HTTP_HOST}.key
-  
-  Your certificate and key files must exist or nginx will fail to
-  start.  For changes to take you will need to restart nginx with
-  svcadm restart svc:/pkgsrc/nginx.
-
-  If you want PHP support with nginx you will need to
-  svcadm enable svc:/pkgsrc/php-fpm.
+    Hosts:    ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port:     443 
+    Docroot:  ${HTTP_DOCROOT}
+    SSL cert: ${NGINX_CONFDIR}/ssl/${HTTP_HOST}.crt
+    SSL key:  ${NGINX_CONFDIR}/ssl/${HTTP_HOST}.key
 
 EOF
 
 }
+nginx_create_tomcatconfig() {
+	NGINX_CONFIG="\
+server {\n\
+  listen 80;\n\
+  server_name ${HTTP_HOST} www.${HTTP_HOST} *.${HTTP_HOST};\n\
+  
+  location ~ ^/(assets) {\n\
+    root ${HTTP_DOCROOT};\n\
+  }\n\
+
+  location / {\n\
+    proxy_set_header X-Forwarded-Host $host;\n\
+    proxy_set_header X-Forwarded-Server $host;\n\
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+    proxy_pass http://127.0.0.1:8080/;\n\
+  }\n\
+}";
+
+	echo -ne "${NGINX_CONFIG}" > ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE}
+	
+	cat << EOF 
+* Created Nginx (Tomcat) configuration ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE}.
+  Settings:
+    Hosts:         ${HTTP_HOST} *.${HTTP_HOST} www.${HTTP_HOST}
+    Port:          80
+    Docroot:       ${HTTP_DOCROOT}
+    Static Assets: ${HTTP_DOCROOT}/assets
+    Proxy:         Pass/Reverse to http://localhost:8080
+
+EOF
+}
+nginx_create_phpconfig() {
+	cat > ${NGINX_CONFDIR}/php.conf <<EOF
+fastcgi_param  SCRIPT_FILENAME    \$document_root$fastcgi_script_name;
+fastcgi_param  QUERY_STRING       \$query_string;
+fastcgi_param  REQUEST_METHOD     \$request_method;
+fastcgi_param  CONTENT_TYPE       \$content_type;
+fastcgi_param  CONTENT_LENGTH     \$content_length;
+
+fastcgi_param  SCRIPT_NAME        \$fastcgi_script_name;
+fastcgi_param  REQUEST_URI        \$request_uri;
+fastcgi_param  DOCUMENT_URI       \$document_uri;
+fastcgi_param  DOCUMENT_ROOT      \$document_root;
+fastcgi_param  SERVER_PROTOCOL    \$server_protocol;
+fastcgi_param  HTTPS              \$https if_not_empty;
+
+fastcgi_param  GATEWAY_INTERFACE  CGI/1.1;
+fastcgi_param  SERVER_SOFTWARE    nginx/$nginx_version;
+
+fastcgi_param  REMOTE_ADDR        \$remote_addr;
+fastcgi_param  REMOTE_PORT        \$remote_port;
+fastcgi_param  SERVER_ADDR        \$server_addr;
+fastcgi_param  SERVER_PORT        \$server_port;
+fastcgi_param  SERVER_NAME        \$server_name;
+
+# PHP only, required if PHP was built with --enable-force-cgi-redirect
+fastcgi_param  REDIRECT_STATUS    200;
+fastcgi_pass 127.0.0.1:9000;
+EOF
+}
+
 case ${HTTP_TYPE} in
 	apache|Apache)
-		[[ ! -d ${APACHE_CONFDIR} ]] && echo "* ERROR - Directory ${APACHE_CONFDIR} doesn't exist." && exit 2;
-		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
-		if [[ ! ${SSL} ]]; then
-			[[ -s ${APACHE_CONFDIR}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR}/${HTTP_CONFFILE} already exists." && exit 2;
-			apache_createconfig;
-		else
-			[[ -s ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR}/${HTTP_SSLCONFFILE} already exists." && exit 2;
-			apache_createsslconfig;
+		# Check if apache is installed through pkgsrc
+		[[ $(svcs -H -o FMRI pkgsrc/apache > /dev/null 2>&1)$? -ne "0" ]] && echo "* ERROR - Apache is not installed." && exit 1;
+
+		# Check if httpd.conf exists
+		[[ ! -s ${APACHE_CONFDIR}/httpd.conf ]] && echo "* ERROR - File ${APACHE_CONFDIR}/httpd.conf doesn't exist." && exit 1;
+
+		# If virtualhosts directory doesn't exist create it
+		if [[ ! -d ${APACHE_CONFDIR_VHOSTS} ]]; then
+			mkdir -p ${APACHE_CONFDIR_VHOSTS};
+			echo "* Created ${APACHE_CONFDIR_VHOSTS} directory.";
 		fi
+
+		# If docroot doesn't exist then create it	
+		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
+
+		# If configuration doesn't exist then create it
+		if [[ ${SSL} ]]; then
+			[[ -s ${APACHE_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE} already exists." && exit 1;
+			apache_create_sslconfig;
+		elif [[ ${TOMCAT} ]]; then
+			[[ -s ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE} already exists." && exit 1;
+			[[ ! -d ${HTTP_DOCROOT}/assets ]] && mkdir -p ${HTTP_DOCROOT}/assets;
+			apache_create_tomcatconfig;
+		else
+			[[ -s ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${APACHE_CONFDIR_VHOSTS}/${HTTP_CONFFILE} already exists." && exit 1;
+			apache_create_config;
+
+		fi
+
+		echo -ne "  For changes to take you will need:\n\n  Include etc/httpd/virtualhosts/*.conf\n\n  in your ${APACHE_CONFDIR}/httpd.conf and restart apache with\n  svcadm restart pkgsrc/apache.\n\n";
+
 		;;
 
 	nginx|Nginx)
-		[[ ! -d ${NGINX_CONFDIR} ]] && echo "* ERROR - Directory ${NGINX_CONFDIR} doesn't exist." && exit 2;
-		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
-		if [[ ! ${SSL} ]]; then
-			[[ -s ${NGINX_CONFDIR}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR}/${HTTP_CONFFILE} already exists." && exit 2;
-			nginx_createconfig;
-		else
-			[[ -s ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR}/${HTTP_SSLCONFFILE} already exists." && exit 2;
-			nginx_createsslconfig;
+		# Check if nginx is installed through pkgsrc
+		[[ $(svcs -H -o FMRI pkgsrc/nginx > /dev/null 2>&1)$? -ne "0" ]] && echo "* ERROR - Nginx is not installed." && exit 1;
+
+		# Check if nginx.conf exists
+		[[ ! -s ${NGINX_CONFDIR}/nginx.conf ]] && echo "* ERROR - File ${NGINX_CONFDIR}/nginx.conf doesn't exist." && exit 1;
+
+		# If virtualhosts directory doesn't exist create it
+		if [[ ! -d ${NGINX_CONFDIR_VHOSTS} ]]; then
+			mkdir -p ${NGINX_CONFDIR_VHOSTS};
+			echo "* Created ${NGINX_CONFDIR_VHOSTS} directory.";
 		fi
+
+		# If php.conf doesn't exit then create it
+		if [[ ! -s ${NGINX_CONFDIR}/php.conf ]]; then
+			nginx_create_phpconfig;
+			echo "* Created ${NGINX_CONFDIR}/php.conf.";
+		fi
+
+		# If docroot doesn't exist then create it	
+		[[ ! -d ${HTTP_DOCROOT} ]] && mkdir -p ${HTTP_DOCROOT};
+
+		# If configuration doesn't exist then create it
+		if [[ ${SSL} ]]; then
+			[[ -s ${NGINX_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR_VHOSTS}/${HTTP_SSLCONFFILE} already exists." && exit 1;
+			[[ ! -d ${NGINX_CONFDIR}/ssl ]] && mkdir -p ${NGINX_CONFDIR}/ssl;
+			nginx_create_sslconfig;
+			echo -ne "  Your certificate and key files must exist or nginx will fail to start.\n";
+		elif [[ ${TOMCAT} ]]; then
+			[[ -s ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE} already exists." && exit 1;
+			[[ ! -d ${HTTP_DOCROOT}/assets ]] && mkdir -p ${HTTP_DOCROOT}/assets;
+			nginx_create_tomcatconfig;
+		else
+			[[ -s ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE} ]] && echo "* ERROR - File ${NGINX_CONFDIR_VHOSTS}/${HTTP_CONFFILE} already exists." && exit 1;
+			nginx_create_config;
+		fi
+
+		echo -ne "  For changes to take you will need:\n\n  include /opt/local/etc/nginx/virtualhosts/*;\n\n  in your ${NGINX_CONFDIR}/nginx.conf http{} block and restart nginx with\n  svcadm restart pkgsrc/nginx.\n\n";
+		echo -ne "  If you want PHP support with nginx you will need to\n  svcadm enable svc:/pkgsrc/php-fpm.\n\n";
 		;;
 
 	*)
