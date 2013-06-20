@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Provides SmartMachine cpu utilization information.
+# Provides vm instance cpu utilization information.
 # Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 set -o errexit
@@ -22,8 +22,8 @@ usage() {
 	exit 1;
 }
 
-while getopts "p" OPTION; do
-	case $OPTION in
+while getopts "p" option; do
+	case ${option} in
 		p)
 			opt_p="true";
 			;;
@@ -46,5 +46,5 @@ vm_cpu_cap_used=$(echo -e "scale=2; (${vm_kstat_cpu_used}/${vm_kstat_cpu_cap})*1
 vm_cpu_used=$(prstat -Z 1 1 | awk -v zone=${vm_uuid} '$8 ~ zone { print $7 }' | sed 's/%//g');
 
 echo "* Gathering cpu infomation for ${vm_uuid}..";
-[[ "${opt_p}" ]] && echo "cpu_used:${vm_cpu_cap_used}" || echo "VM CPU Cap Used: ${vm_cpu_cap_used} %";
-[[ "${opt_p}" ]] && echo "cpu_util:${vm_cpu_used}" || echo "VM CPU Used: ${vm_cpu_used} %";
+[[ "${opt_p}" ]] && echo "cpu_util:${vm_cpu_used}" || echo "CPU Used: ${vm_cpu_used} %";
+[[ "${opt_p}" ]] && echo "cpu_used:${vm_cpu_cap_used}" || echo "CPU Cap Used: ${vm_cpu_cap_used} %";

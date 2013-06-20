@@ -1,29 +1,35 @@
 #!/usr/bin/bash
 #
-# Provides SmartMachine memory utilization information.
-# Joyent 2013.
+# Provides vm instance memory utilization information.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+
+set -o errexit
+set -o pipefail
+#set -o nounset
+#set -o xtrace
 
 usage() {
-cat << EOF
+	cat <<- EOF >&2
 
-Usage: $0 [options] TYPE
+	Usage: $0 [options] TYPE
 
-Arguments:
+	Arguments:
     
-    TYPE             rss or swap.
+	    TYPE             rss or swap.
 
-Options:
+	Options:
     
-    -p               Machine parsable output. 
+	    -p               Machine parsable output. 
 
-EOF
-exit 2;
+	EOF
+
+	exit 1;
 }
 
-while getopts "p" OPTION; do
-	case $OPTION in
+while getopts "p" option; do
+	case ${option} in
 		p)
-			machine="YES";
+			opt_p="true";
 			;;
 		*)
 			usage;
@@ -33,76 +39,62 @@ done
 
 shift $(($OPTIND - 1))
 if [[ $# = 1 ]]; then
-	TYPE=$1;
+	type=$1;
 else
 	usage;
 fi
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
-zone=$(zonename);
-zoneid=$(zoneadm list -p | awk -F: '{print $1}')
+vm_uuid=$(zonename);
+vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
 
-function get_swap_cap {
-        swap_cap=$( kstat -p -c zone_caps -n swapresv_zone_$zoneid -s value | awk '{print $2}' )
-}
-function get_virt_used {
-        virt_used=$( kstat -p -c zone_caps -n swapresv_zone_$zoneid -s usage | awk '{print $2}' )
-}
-function get_tmp_used {
-        tmp_used=$( df -k /tmp | awk '{ if ($1 ~ /swap/) print $3}' )
-}
-function get_mem_cap {
-        mem_cap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2);
-}
-function get_mem_used {
-	mem_used=$(kstat -c zone_memory_cap -s rss -p | cut -f2);
-}
-function convert {
-        value=$1
-        if [ "$machine" ]; then converted=$value
-        else
-                units=(B KiB MiB GiB TiB)
-                index=0
-                converted="$1 ${units[$index]}"
-                while [ $value -ge 1024 ]
-                do
-                        index=$(($index+1))
-                        value=$(echo -e "scale=1; $value/1024" | bc)
-                        converted="$value ${units[$index]}"
-                        value=${value%\.*}
-                done
-        fi
-}
-
-case ${TYPE} in
+case ${type} in
 rss)
-	echo "* Gathering rss memory infomation for $zone..";
-        get_mem_cap
-        get_mem_used
-        [ "$machine" ] && echo -n "mem_cap:" || echo -n "Memory cap: "
-        convert $mem_cap && echo $converted
-        [ "$machine" ] && echo -n "mem_used:" || echo -n "Memory used: "
-        convert $mem_used && echo $converted
-        [ "$machine" ] && echo -n "mem_free:" || echo -n "Memory free: "
-        convert $(($mem_cap-$mem_used)) && echo $converted
+	echo "* Gathering rss memory infomation for ${vm_uuid}..";
+
+	vm_memcap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ print $1 }');
+	vm_memused=$(kstat -c zone_memory_cap -s rss -p | cut -f2 | awk '{ print $1 }');
+	vm_memfree=$(echo "${vm_memcap}-${vm_memused}" | bc);
+	vm_memfree="$(( ${vm_memcap}-${vm_memused} ))";
+
+	if [[ -z "${opt_p}" ]]; then
+		cat <<-EOF
+		Memory (RSS) Cap     $((${vm_memcap}/1024/1024))M
+		Memory (RSS) Used    $((${vm_memused}/1024/1024))M
+		Memory (RSS) Free    $((${vm_memfree}/1024/1024))M
+		EOF
+	else
+		cat <<-EOF
+		vm_memcap:${vm_memcap}
+		vm_memused:${vm_memused}
+		vm_memfree:${vm_memfree}
+		EOF
+	fi
         ;;
 swap)
-	echo "* Gathering swap memory infomation for $zone..";
-        get_swap_cap
-        get_virt_used
-        get_tmp_used
-        swap_used=$(( $virt_used + $tmp_used ))
-        [ "$machine" ] && echo -n "swap_cap:" || echo -n "Swap cap: "
-        convert $swap_cap && echo $converted
-        [ "$machine" ] && echo -n "virt_used:" || echo -n "Virtual memory used: "
-        convert $virt_used && echo $converted
-        [ "$machine" ] && echo -n "tmp_used:" || echo -n "/tmp used: "
-        convert $tmp_used && echo $converted
-        [ "$machine" ] && echo -n "swap_used:" || echo -n "Total swap used: "
-        convert $swap_used && echo $converted
-        [ "$machine" ] && echo -n "swap_free:" || echo -n "Total swap free: "
-        convert $(($swap_cap-$swap_used)) && echo $converted
+	echo "* Gathering swap memory infomation for ${vm_uuid}..";
+
+        vm_swapcap=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s value | awk '{ print $2 }');
+	vm_swapused=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s usage | awk '{ print $2 }');
+	vm_tmpused=$(df -B1 /tmp | awk '{ if ($1 ~ /swap/) print $3 }');
+	vm_swapfree="$(( ${vm_swapcap}-(${vm_swapused}+${vm_tmpused}) ))";
+
+	if [[ -z "${opt_p}" ]]; then
+		cat <<-EOF
+		Memory (Swap) Cap    $((${vm_swapcap}/1024/1024))M
+		Memory (Swap) Used   $((${vm_swapused}/1024/1024))M
+		Memory (/tmp) Used   $((${vm_tmpused}/1024/1024))M
+		Memory (Swap) Free   $((${vm_swapfree}/1024/1024))M
+		EOF
+	else
+		cat <<-EOF
+		vm_swapcap:${vm_swapcap}
+		vm_swapused:${vm_swapused}
+		vm_tmpused:${vm_tmpused}
+		vm_swapfree:${vm_swapfree}
+		EOF
+	fi
         ;;
 *)
 	usage;

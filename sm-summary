@@ -1,58 +1,65 @@
 #!/usr/bin/bash
 #
-# Provides SmartMachine summary of information.
-# Joyent 2013.
+# Provides vm instance summary of information.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+
+set -o errexit
+set -o pipefail
+#set -o nounset
+#set -o xtrace
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
-echo "* Gathering SmartMachine summary..";
-SM_UUID=$(zonename);
-SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
-SM_HOSTNAME=$(hostname);
+echo "* Gathering vm instance summary..";
+vm_uuid=$(zonename);
+vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
+vm_hostname=$(hostname);
 
 if [[ -f /etc/product ]]; then
-        SM_IMAGE=$(cat /etc/product | grep "^Image:" | awk -F': ' '{ print $2 }') || SM_IMAGE="NA";
-        SM_IMAGE=${SM_IMAGE:-$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }')} || SM_IMAGE="NA";
-        SM_IMAGE=${SM_IMAGE:-NA} || SM_IMAGE="NA";
-        SM_DOC=$(cat /etc/product | grep "^Documentation:" | awk -F': ' '{ print $2 }') || SM_DOC="NA";
-        SM_DOC=${SM_DOC:-NA} || SM_DOC="NA";
-        SM_BASEIMAGE=$(cat /etc/product | grep "^Base Image:" | awk -F': ' '{ print $2 }') || SM_BASEIMAGE="NA";
-        SM_BASEIMAGE=${SM_BASEIMAGE:-NA} || SM_BASEIMAGE="NA";
+        vm_image=$(cat /etc/product | grep "^Image:" | awk -F': ' '{ print $2 }') || vm_image="NA";
+        vm_image=${vm_image:-$(cat /etc/product | grep Dataset | awk '{ print $2 " " $3 }')} || vm_image="NA";
+        vm_image=${vm_image:-NA} || vm_image="NA";
+        vm_homepage=$(cat /etc/product | grep "^Documentation:" | awk -F': ' '{ print $2 }') || vm_homepage="NA";
+        vm_homepage=${vm_homepage:-NA} || vm_homepage="NA";
+        vm_baseimage=$(cat /etc/product | grep "^Base Image:" | awk -F': ' '{ print $2 }') || vm_baseimage="NA";
+        vm_baseimage=${vm_baseimage:-NA} || vm_baseimage="NA";
 else
-        SM_IMAGE="NA";
-        SM_DOC="NA";
-        SM_BASEIMAGE="NA";
+        vm_image="NA";
+        vm_homepage="NA";
+        vm_baseimage="NA";
 fi
 
-[[ -f /opt/local/etc/pkg_install.conf ]] && SM_PKGSRC=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || SM_PKGSRC="Not installed";
-SM_BUILD=$(uname -v);
-SM_NPROCS=$(kstat -p -n nprocs_zone_${SM_ID} -s usage | awk '{ print $2 }');
-SM_MEMCAP=$(kstat -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ printf("%d", $1/1024/1024)}');
-SM_MEMUSED=$(kstat -c zone_memory_cap -s rss -p | cut -f2 | awk '{ printf("%d", $1/1024/1024) }');
-SM_MEMFREE=$(echo "${SM_MEMCAP}-${SM_MEMUSED}" | bc);
-SM_SWAPCAP=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s value | awk '{ print $2/1024/1024 }');
-SM_SWAPUSED=$(kstat -p -c zone_caps -n swapresv_zone_${SM_ID} -s usage | awk '{ printf("%d", $2/1024/1024) }');
-SM_TMPUSED=$(du -hs /tmp | awk '{ print $1 }');
-SM_DISKQUOTA=$(df -h / | tail -1 | awk '{ print $2 }');
-SM_DISKUSED=$(df -P -h / | tail -1 | awk '{ print $5 }');
+[[ -f /opt/local/etc/pkg_install.conf ]] && vm_pkgsrc=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || vm_pkgsrc="Not installed";
+vm_build=$(uname -v);
+vm_nprocs=$(kstat -p -n nprocs_zone_${vm_id} -s usage | awk '{ print $2 }');
+vm_memcap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ printf("%d", $1/1024/1024)}');
+vm_memused=$(kstat -c zone_memory_cap -s rss -p | cut -f2 | awk '{ printf("%d", $1/1024/1024) }');
+vm_memfree=$(echo "${vm_memcap}-${vm_memused}" | bc);
+vm_swapcap=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s value | awk '{ print $2/1024/1024 }');
+vm_swapused=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s usage | awk '{ printf("%d", $2/1024/1024) }');
+vm_tmpused=$(df -B1 /tmp | awk '{ if ($1 ~ /swap/) printf("%d", $3/1024/1024) }');
+vm_swapfree="$(( ${vm_swapcap}-(${vm_swapused}+${vm_tmpused}) ))";
+vm_diskquota=$(df -h / | tail -1 | awk '{ print $2 }');
+vm_diskused=$(df -P -h / | tail -1 | awk '{ print $5 }');
 
 cat << EOF
-SM UUID             ${SM_UUID}
-SM ID               ${SM_ID}
-Hostname            ${SM_HOSTNAME}
-SmartOS build       ${SM_BUILD} 
-Image               ${SM_IMAGE}
-Base Image          ${SM_BASEIMAGE}
-Documentation       ${SM_DOC}
-Pkgsrc              ${SM_PKGSRC}
-Processes           ${SM_NPROCS}
-Memory (RSS) Cap    ${SM_MEMCAP}M
-Memory (RSS) Used   ${SM_MEMUSED}M
-Memory (RSS) Free   ${SM_MEMFREE}M
-Swap Cap            ${SM_SWAPCAP}M
-Swap Used           ${SM_SWAPUSED}M
-/tmp Used           ${SM_TMPUSED}
-Disk Quota          ${SM_DISKQUOTA}
-% Disk Used         ${SM_DISKUSED}
+VM uuid             ${vm_uuid}
+VM id               ${vm_id}
+Hostname            ${vm_hostname}
+SmartOS build       ${vm_build} 
+Image               ${vm_image}
+Base Image          ${vm_baseimage}
+Documentation       ${vm_homepage}
+Pkgsrc              ${vm_pkgsrc}
+Processes           ${vm_nprocs}
+Memory (RSS) Cap    ${vm_memcap}M
+Memory (RSS) Used   ${vm_memused}M
+Memory (RSS) Free   ${vm_memfree}M
+Memory (Swap) Cap   ${vm_swapcap}M
+Memory (Swap) Used  ${vm_swapused}M
+Memory (/tmp) Used  ${vm_tmpused}M
+Memory (Swap) Free  ${vm_swapfree}M
+Disk Quota          ${vm_diskquota}
+% Disk Used         ${vm_diskused}
 EOF
