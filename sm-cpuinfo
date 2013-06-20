@@ -1,25 +1,31 @@
 #!/usr/bin/bash
 #
 # Provides SmartMachine cpu utilization information.
-# Joyent 2013.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
+
+set -o errexit
+set -o pipefail
+#set -o nounset
+#set -o xtrace
 
 usage() {
-cat << EOF
+	cat <<- EOF >&2
 
-Usage: $0 [-p]
+	Usage: $0 [-p]
 
-Options:
+	Options:
     
-    -p               Machine parsable output. 
+        -p               Machine parsable output. 
 
-EOF
-exit 2;
+	EOF
+
+	exit 1;
 }
 
 while getopts "p" OPTION; do
 	case $OPTION in
 		p)
-			MACHINE="YES";
+			opt_p="true";
 			;;
 		*)
 			usage;
@@ -29,16 +35,16 @@ done
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
-SM_UUID=$(zonename);
-SM_ID=$(zoneadm list -p | awk -F: '{ print $1 }');
+vm_uuid=$(zonename);
+vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
 
-KSTAT_CPU_CAP=$(kstat -p -c zone_caps -n cpucaps_zone_${SM_ID} -s value | awk '{print $2}');
-KSTAT_CPU_USED=$(kstat -p -c zone_caps -n cpucaps_zone_${SM_ID} -s usage | awk '{print $2}');
-CPU_USED=$(echo -e "scale=2; (${KSTAT_CPU_USED}/${KSTAT_CPU_CAP})*100" | bc 2>/dev/null | sed 's/\.[0-9]*//');
-[[ ! ${CPU_USED} ]] && CPU_USED="NA";
+vm_kstat_cpu_cap=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s value | awk '{print $2}');
+vm_kstat_cpu_used=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s usage | awk '{print $2}');
+vm_cpu_cap_used=$(echo -e "scale=2; (${vm_kstat_cpu_used}/${vm_kstat_cpu_cap})*100" | bc 2>/dev/null | sed 's/\.[0-9]*//');
+[[ ! ${cpu_used} ]] && cpu_used="NA";
 
-CPU_UTIL=$(/usr/bin/prstat -Z 1 1 | awk -v zone=${SM_UUID} '$8 ~ zone { print $7 }' | sed 's/%//g')
+vm_cpu_used=$(prstat -Z 1 1 | awk -v zone=${vm_uuid} '$8 ~ zone { print $7 }' | sed 's/%//g');
 
-echo "* Gathering cpu infomation for ${SM_UUID}..";
-[ "${MACHINE}" ] && echo "cpu_used:${CPU_USED}" || echo "CPU Cap Used: ${CPU_USED} %"
-[ "${MACHINE}" ] && echo "cpu_util:${CPU_UTIL}" || echo "System CPU Used: ${CPU_UTIL} %"
+echo "* Gathering cpu infomation for ${vm_uuid}..";
+[[ "${opt_p}" ]] && echo "cpu_used:${vm_cpu_cap_used}" || echo "VM CPU Cap Used: ${vm_cpu_cap_used} %";
+[[ "${opt_p}" ]] && echo "cpu_util:${vm_cpu_used}" || echo "VM CPU Used: ${vm_cpu_used} %";
