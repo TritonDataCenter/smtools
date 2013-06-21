@@ -38,8 +38,17 @@ timer=30
 
 while [ $((timer--)) -gt 0 ]; do
 
-  if [[ -e /var/run/smartdc/metadata.sock ]]; then
-    break;
+  if [[ -e /.zonecontrol/metadata.sock ]] ||\
+     [[ -e /var/run/smartdc/metadata.sock ]]; then
+    /usr/sbin/mdata-get sdc:uuid
+    result=$?
+    if [[ ${result} -lt 10 ]]; then
+      # exit 10 means problem talking to socket. We assume errors 10 or
+      # higher (I've seen 141 from something in here getting SIGPIPE too)
+      # is something we'll just retry on for now.  <10 we assume is a
+      # problem retrying won't fix (eg. not found) or is success (0)
+      break;
+    fi
   fi
 
   # This is an alternate signal to metadata which we enable if the socket isn't
@@ -49,7 +58,8 @@ while [ $((timer--)) -gt 0 ]; do
   sleep 1
 done
 
-if [ ! -e /var/run/smartdc/metadata.sock ]; then
+if [ ! -e /.zonecontrol/metadata.sock ] && \
+   [ ! -e /var/run/smartdc/metadata.sock ]; then
   echo "No metadata socket file, skipping metadata loading."
   exit ${SMF_EXIT_OK}
 fi
