@@ -1,6 +1,10 @@
 log "cleaning files"
 
-cp /dev/null /var/log/auth.log >/dev/null
+if [ -e /var/log/auth.log ]; then
+  cp /dev/null /var/log/auth.log >/dev/null
+else
+  cp /dev/null /var/log/authlog >/dev/null
+fi
 
 log "substituting placeholders for real data in config files"
 
