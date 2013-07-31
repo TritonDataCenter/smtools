@@ -63,7 +63,7 @@ Memory (Swap) Used  ${vm_swapused}M
 Memory (/tmp) Used  ${vm_tmpused}M
 Memory (Swap) Free  ${vm_swapfree}M
 Memory NOver Cap    ${vm_memnover}
-Memory NOver Pgout  ${vm_mempgout}M
+Memory Memory Pgout ${vm_mempgout}M
 Disk Quota          ${vm_diskquota}
 % Disk Used         ${vm_diskused}
 EOF
