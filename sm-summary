@@ -11,7 +11,7 @@ set -o pipefail
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 
-echo "* Gathering vm instance summary..";
+echo "* Gathering VM instance summary..";
 vm_uuid=$(zonename);
 vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
 vm_hostname=$(hostname);
@@ -40,6 +40,8 @@ vm_swapcap=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s value | awk '{ p
 vm_swapused=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s usage | awk '{ printf("%d", $2/1024/1024) }');
 vm_tmpused=$(df -B1 /tmp | awk '{ if ($1 ~ /swap/) printf("%d", $3/1024/1024) }');
 vm_swapfree="$(( ${vm_swapcap}-(${vm_swapused}+${vm_tmpused}) ))";
+vm_memnover=$(kstat -c zone_memory_cap -s nover -p | cut -f2);
+vm_mempgout=$(kstat -c zone_memory_cap -s pagedout -p | cut -f2 | awk '{ printf("%d", $1/1024/1024)}');
 vm_diskquota=$(df -h / | tail -1 | awk '{ print $2 }');
 vm_diskused=$(df -P -h / | tail -1 | awk '{ print $5 }');
 
@@ -60,6 +62,8 @@ Memory (Swap) Cap   ${vm_swapcap}M
 Memory (Swap) Used  ${vm_swapused}M
 Memory (/tmp) Used  ${vm_tmpused}M
 Memory (Swap) Free  ${vm_swapfree}M
+Memory NOver Cap    ${vm_memnover}
+Memory NOver Pgout  ${vm_mempgout}M
 Disk Quota          ${vm_diskquota}
 % Disk Used         ${vm_diskused}
 EOF

@@ -57,18 +57,24 @@ rss)
 	vm_memused=$(kstat -c zone_memory_cap -s rss -p | cut -f2 | awk '{ print $1 }');
 	vm_memfree=$(echo "${vm_memcap}-${vm_memused}" | bc);
 	vm_memfree="$(( ${vm_memcap}-${vm_memused} ))";
+	vm_memnover=$(kstat -c zone_memory_cap -s nover -p | cut -f2);
+	vm_mempgout=$(kstat -c zone_memory_cap -s pagedout -p | cut -f2);
 
 	if [[ -z "${opt_p}" ]]; then
 		cat <<-EOF
 		Memory (RSS) Cap     $((${vm_memcap}/1024/1024))M
 		Memory (RSS) Used    $((${vm_memused}/1024/1024))M
 		Memory (RSS) Free    $((${vm_memfree}/1024/1024))M
+		Memory NOver Cap     ${vm_memnover}
+		Memory NOver Pgout   $((${vm_mempgout}/1024/1024))M
 		EOF
 	else
 		cat <<-EOF
 		vm_memcap:${vm_memcap}
 		vm_memused:${vm_memused}
 		vm_memfree:${vm_memfree}
+		vm_memnover:${vm_memnover}
+		vm_mempgout:${vm_mempgout}
 		EOF
 	fi
         ;;
