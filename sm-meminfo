@@ -66,7 +66,7 @@ rss)
 		Memory (RSS) Used    $((${vm_memused}/1024/1024))M
 		Memory (RSS) Free    $((${vm_memfree}/1024/1024))M
 		Memory NOver Cap     ${vm_memnover}
-		Memory Memory Pgout  $((${vm_mempgout}/1024/1024))M
+		Memory Pgout         $((${vm_mempgout}/1024/1024))M
 		EOF
 	else
 		cat <<-EOF
