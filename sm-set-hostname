@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Set the hostname of a SmartMachine.
+# Set the hostname of a VM.
 # Joyent 2013.
 
 usage() {
@@ -16,12 +16,12 @@ exit 2;
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
-HOSTNAME=$1
-ZONENAME=$(zonename);
-IP_EXTERNAL=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
-IP_INTERNAL=$(ifconfig -a | grep -A 1 net1 | awk '/inet/ { print $2 }');
+vm_host=$1
+vm_uuid=$(zonename);
+ip_external=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
+ip_internal=$(ifconfig -a | grep -A 1 net1 | awk '/inet/ { print $2 }');
 
-echo "* Setting hostname for ${ZONENAME}..";
+echo "* Setting hostname for ${vm_uuid}..";
 
 cat > /etc/inet/hosts << EOF
 # CDDL HEADER START
@@ -50,12 +50,12 @@ cat > /etc/inet/hosts << EOF
 #
 ::1		localhost
 127.0.0.1	localhost loghost
-${IP_EXTERNAL}	${HOSTNAME}
-${IP_INTERNAL}	${ZONENAME}	loghost
+${ip_external}	${vm_host}
+${ip_internal}	${vm_uuid}	loghost
 EOF
 
-echo "${HOSTNAME}" > /etc/nodename
+echo "${vm_host}" > /etc/nodename
 
-hostname ${HOSTNAME}
+hostname ${vm_host}
 
-echo "* Changed hostname to ${HOSTNAME}.  You will need to reboot.";
+echo "* Changed hostname to ${vm_host}.  You will need to reboot.";

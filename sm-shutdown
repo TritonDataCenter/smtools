@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Shuts down a SmartMachine.
+# Shuts down a VM.
 # Joyent 2013.
 
 export LANG=C

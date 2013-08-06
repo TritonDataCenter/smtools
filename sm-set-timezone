@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Set the timezone of a SmartMachine.
+# Set the timezone of a VM.
 # Joyent 2013.
 
 usage() {
@@ -10,7 +10,7 @@ Usage: $0 TIMEZONE
 
 Arguments:
     
-    TIMEZONE         Timezone to set your SmartMachine to.
+    TIMEZONE         Timezone to set your VM to.
 
 EOF
 exit 2;
@@ -20,26 +20,26 @@ exit 2;
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
-TIMEZONE=$1;
-ZONENAME=$(zonename);
+vm_time=$1;
+vm_uuid=$(zonename);
 
 # Check if timezone set exists first.
-TIMEZONES=$(find /usr/share/lib/zoneinfo -type f | awk -F/usr/share/lib/zoneinfo/ '{ print $2 }' | egrep -v "src/|.tab");
-for i in ${TIMEZONES[@]}; do
-	if [[ ${TIMEZONE} == ${i} ]]; then
-		FOUND="YES";
+vm_times=$(find /usr/share/lib/zoneinfo -type f | awk -F/usr/share/lib/zoneinfo/ '{ print $2 }' | egrep -v "src/|.tab");
+for i in ${vm_times[@]}; do
+	if [[ ${vm_time} == ${i} ]]; then
+		found="YES";
 	fi
 done
 
-[[ ! ${FOUND} ]] && echo "ERROR - The timezone ${TIMEZONE} isn't available on this SmartMachine." && exit 2;
+[[ ! ${found} ]] && echo "ERROR - The timezone ${vm_time} isn't available on this VM." && exit 2;
 
 # Set the new timezone.
-echo "* Setting timezone for ${ZONENAME}..";
+echo "* Setting timezone for ${vm_uuid}..";
 
 cat /etc/default/init | grep -v "TZ=" > /etc/default/init.new
-echo "TZ=${TIMEZONE}" >> /etc/default/init.new
+echo "TZ=${vm_time}" >> /etc/default/init.new
 mv /etc/default/init.new /etc/default/init
 rm /etc/TIMEZONE
 ln -s /etc/default/init /etc/TIMEZONE
 
-echo "* Changed to timezone to ${TIMEZONE}.  You will need to reboot.";
+echo "* Changed to timezone to ${vm_time}.  You will need to reboot.";

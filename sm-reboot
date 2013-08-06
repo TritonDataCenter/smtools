@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# Reboot a SmartMachine.
+# Reboot a VM.
 # Joyent 2013.
 
 export LANG=C
