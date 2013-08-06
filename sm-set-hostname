@@ -4,7 +4,7 @@
 # Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 usage() {
-cat << EOF
+cat << EOF >&2
 
 Usage: $0 HOSTNAME
 
@@ -16,7 +16,7 @@ exit 2;
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
-vm_host=$1
+vm_host="$1";
 vm_uuid=$(zonename);
 ip_external=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
 ip_internal=$(ifconfig -a | grep -A 1 net1 | awk '/inet/ { print $2 }');
