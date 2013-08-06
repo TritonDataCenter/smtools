@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Reboot a VM.
-# Joyent 2013.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";

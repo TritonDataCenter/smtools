@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 # 
-# Looks at properties of MySQL and determines best
-# values to be set in your configuration file.
+# This looks at properties of MySQL and determines
+# best values to be set in your configuration file.
 # This tuner assumes you are giving 70% of the SM 
 # memory to MySQL only.
-# Joyent 2013. 
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 usage() {
 cat << EOF

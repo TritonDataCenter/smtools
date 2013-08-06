@@ -2,7 +2,7 @@
 # rebuild-pkgsrc
 # Reconstructs the userland pkgsrc software by using a new bootstrap image
 # and re-installing all packages from a new package set.
-# Joyent 2013
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 # Debugging config
 

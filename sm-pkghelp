@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 # pkghelp
 # A dummy wrapper to educate about the pkgin tool
-# Joyent 2013
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 export LANG=C
 command=$(basename $0)

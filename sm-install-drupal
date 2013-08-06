@@ -3,7 +3,7 @@
 # Installs drupal in destination directory. You may
 # need to change DP_FILE to what version you need.
 # Requirements: Must have HTTP virtual host already setup.
-# Joyent 2013. 
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 usage() {
 cat << EOF

@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Remove a MySQL/PostgreSQL database for a SmartMachine.
-# Joyent 2013.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 
 usage() {
 cat << EOF
