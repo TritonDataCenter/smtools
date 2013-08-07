@@ -13,14 +13,3 @@ mv /etc/resolv.conf{.tmp,}
 
 sed '/^127\.0\.0\.1/s/$/ '${HOSTNAME}'/' /etc/inet/hosts > /etc/inet/hosts.tmp
 mv /etc/inet/hosts{.tmp,}
-
-log "checking if we can reach the Internets"
-
-if dig www.joyent.com +short +time=2 +tries=1 >/dev/null 2>&1 && \
-   ping www.joyent.com 2 >/dev/null 2>&1 && \
-   curl -m 5 -s -I http://www.joyent.com >/dev/null; then
-  NETWORKING=yes
-else
-  NETWORKING=no
-  log "continuing with no apparent Internet access"
-fi
