@@ -113,3 +113,4 @@ for USER in ${USERS[@]}; do
   fi
 done
 
+SSH_PASSWORD_AUTH=$(mdata enable_password_authentication || echo true)
