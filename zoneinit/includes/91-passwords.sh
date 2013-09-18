@@ -12,7 +12,7 @@ for _PASSTOOL in $(type -p changepass); do
   fi
 done
 
-for USER in ${USERS[@]}; do
+[[ ${SSH_PASSWORD_AUTH} =~ true ]] && for USER in ${USERS[@]}; do
 
   log "setting system password for user '${USER}'"
   PASS_VAR_LOWER=${USER}_pw

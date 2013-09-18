@@ -29,9 +29,12 @@ mdata_files=(mdata-fetch mdata-execute mdata.xml)
 ### Bits to look for
 {
 delete_files=(
+  /.zonecontrol/metadata.sock
   /etc/ssh/ssh_*key*
   /var/ssh/ssh_*key*
   /etc/defaultrouter
+  /etc/dhcp/*.dhc
+  /etc/dhcp.*
   /etc/hostname.net*
   /var/adm
   /var/cron
