@@ -29,7 +29,6 @@ mdata_files=(mdata-fetch mdata-execute mdata.xml)
 ### Bits to look for
 {
 delete_files=(
-  /.zonecontrol/metadata.sock
   /etc/ssh/ssh_*key*
   /var/ssh/ssh_*key*
   /etc/defaultrouter
@@ -154,6 +153,9 @@ done
 for file in ${touch_files[@]}; do
   each_file_in ${file} touch
 done
+
+# Remove this socket file explicitly:
+rm -f /.zonecontrol/metadata.sock
 
 # Make sure /var/ssh exists to hold SSH host keys
 [ -d /var/ssh ] || mkdir -p /var/ssh
