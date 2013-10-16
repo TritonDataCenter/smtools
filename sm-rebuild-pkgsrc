@@ -86,16 +86,16 @@ set_pgsql_pass() {
 clear
 cat <<EOF
 
-- This script upgrades userland software in /opt/local, using packages from 
+- This script upgrades userland software in @PREFIX@, using packages from 
   the following package set:
   
     ${pkg_url}
   
-  In the process, your /opt/local path will be backed up, new bootstrap image
+  In the process, your @PREFIX@ path will be backed up, new bootstrap image
   will be downloaded and packages that you had installed, will be re-installed
   from the new package set.
   
-  Consequently, if you had any software or files installed under /opt/local
+  Consequently, if you had any software or files installed under @PREFIX@
   that did not come from pkgsrc packages (when this machine was provisioned,
   or installed later on), it will be removed and only preserved in the backup
   compressed tarball.
@@ -343,19 +343,22 @@ EOF
 fi
 }
 
-## Make a backup of /opt/local
+## Make a backup of @PREFIX@
 {
 echo "* Recording packages installed before the upgrade..."
 pkg_info | awk '{print $1}' | sort | sed 's/-[^-]*$//' \
  > ${backup_packages}
 
 echo "* Backing up existing software base..."
-(cd /opt/local; gtar -czf ${backup_tarball} .)
+(cd @PREFIX@; gtar -czf ${backup_tarball} .)
 
 echo "* Moving existing software base away..."
-mv /opt/local{,.old}
-/usr/bin/mkdir /opt/local
-cp -Rp /opt/local{.old,}/etc
+[ -d @PREFIX@/etc ] && mv @PREFIX@/etc ${backup_dir}/etc
+[ -f @PREFIX@/.dlj_license_accepted ] && java_license=yes
+rm -rf @PREFIX@
+/usr/bin/mkdir @PREFIX@
+[ -d ${backup_dir}/etc ] && mv ${backup_dir}/etc @PREFIX@/etc
+[ "${java_license}" == "yes" ] && touch @PREFIX@/.dlj_license_accepted
 }
 
 ## Download and install a new bootstrap kit
@@ -369,8 +372,8 @@ echo "* Downloading new software bootstrap kit..."
 ## Misc tool & config updates
 {
 echo "* Configuring package tools..."
-echo ${pkg_url}/All > /opt/local/etc/pkgin/repositories.conf
-echo PKG_PATH=${pkg_url}/All > /opt/local/etc/pkg_install.conf
+echo ${pkg_url}/All > @PKG_SYSCONFDIR@/pkgin/repositories.conf
+echo PKG_PATH=${pkg_url}/All > @PKG_SYSCONFDIR@/pkg_install.conf
 
 echo "* Re-installing base packages..."
 rm -f /var/db/pkgin/pkgin.db
@@ -379,7 +382,7 @@ pkg_add coreutils diffutils findutils gawk grep groff gsed gtar-base \
   less patch pkg_alternatives sudo openssl mozilla-rootcerts >/dev/null 2>&1
 
 echo "* Updating OpenSSL certificate database..."
-(cd /opt/local/etc/openssl/certs && \
+(cd @PKG_SYSCONFDIR@/openssl/certs && \
  mozilla-rootcerts extract && mozilla-rootcerts rehash) >/dev/null 2>&1
 
 echo "* Removing deprecated system files..."
@@ -389,11 +392,8 @@ fi
 if [ -d /opt/gcc ]; then
   rm -rf /opt/gcc
 fi
-[ -e /opt/local.old/.dlj_license_accepted ] && \
-  touch /opt/local/.dlj_license_accepted
-rm -rf /opt/local.old
 
-PATH=/opt/local/gnu/bin:${PATH}
+PATH=@PREFIX@/gnu/bin:${PATH}
 hash -r
 
 echo "* Updating tool configuration..."
@@ -402,14 +402,14 @@ for user in /root /home/admin /home/node; do
   [ -e ${user}/.profile ] && cat >> ${user}/.profile <<EOF
 
 # man configuration
-MANPATH=/opt/local/gcc47/man:/opt/local/java/sun6/man:/opt/local/lib/perl5/man:/opt/local/lib/perl5/vendor_perl/man:/opt/local/man:/usr/share/man
+MANPATH=@PREFIX@/man:/usr/share/man:@PREFIX@/gcc47/man:@PREFIX@/java/sun6/man:@PREFIX@/lib/perl5/man:@PREFIX@/lib/perl5/vendor_perl/man
 export MANPATH
 alias man='TROFF="groff -T ascii" TCAT="cat" PAGER="less -is" /bin/man -T -mandoc'
 EOF
 
   awk -F= '{
     if ($1~/^PATH/ && $2!~/gnu\/bin/)
-      print "PATH=/opt/local/gnu/bin:" $2;
+      print "PATH=@PREFIX@/gnu/bin:" $2;
     else
       print}
   ' ${user}/.profile > /tmp/.profile.tmp 2>&1 && mv /tmp/.profile.tmp ${user}/.profile
@@ -439,7 +439,7 @@ fi
 missing=($(missing_packages))
 if [ ${#missing[@]} -gt 0 ]; then
   if missing_packages|grep ^sun-j >/dev/null; then
-    touch /opt/local/.dlj_license_accepted
+    touch @PREFIX@/.dlj_license_accepted
   fi
   echo "* Re-installing ${#missing[@]} additional packages..."
   pkg_add ${missing[@]} >/dev/null 2>&1 || true
@@ -462,7 +462,7 @@ fi
 {
 if [ ${mysql_dumped} ] && [ -s ${backup_mydump} ]; then
   echo "* Upgrading MySQL databases..."
-  if [ -e /opt/local/etc/my.cnf ]; then
+  if [ -e @PKG_SYSCONFDIR@/my.cnf ]; then
     sed \
         -e '/skip-bdb/d' \
         -e 's/skip-locking/skip-external-locking/' \
@@ -470,8 +470,8 @@ if [ ${mysql_dumped} ] && [ -s ${backup_mydump} ]; then
         -e '/slow_query_log =/d' \
         -e '/slow_query_log_file/i\
 slow_query_log = 1
-'  /opt/local/etc/my.cnf > /tmp/my.cnf && \
-    mv /tmp/my.cnf /opt/local/etc/my.cnf
+'  @PKG_SYSCONFDIR@/my.cnf > /tmp/my.cnf && \
+    mv /tmp/my.cnf @PKG_SYSCONFDIR@/my.cnf
   fi
   svcadm enable -s pkgsrc/mysql:default
   sleep 4
@@ -502,7 +502,7 @@ cat <<EOF
   ${pkg_url}
 
   The following directory holds backups taken before the upgrade - a tarball
-  of /opt/local, list of packages installed and (where applicable) backups
+  of @PREFIX@, list of packages installed and (where applicable) backups
   of MySQL and PostgreSQL databases:
 
   ${backup_dir}
@@ -566,10 +566,10 @@ fi
 
 # Check for processes needing restart
 {
-if pgrep -fl /opt/local | grep -v $(basename $0) >/dev/null; then
+if pgrep -fl @PREFIX@ | grep -v $(basename $0) >/dev/null; then
   cat <<EOF
 - This machine seems to have processes running that reference files under the 
-  /opt/local path. Since the entire /opt/local path has been re-built, the
+  @PREFIX@ path. Since the entire @PREFIX@ path has been re-built, the
   in-memory processes are likely out of sync with their on-disk origins, and
   may misbehave. It is strongly suggested to restart the relevant services
   (e.g. using 'svcadm restart <service>), though the ultimate way of proving
