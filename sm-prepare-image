@@ -252,6 +252,11 @@ else
 fi
 }
 
+
+# Skip zoneinit creation if we already have the zoneinit package
+# (as of 2013Q3)
+if ! pkg_info -qE zoneinit; then
+
 echo
 echo "=> Creating a basic zoneinit instance"
 {
@@ -278,6 +283,12 @@ for mdata_file in ${mdata_files[@]}; do
   fi
 done
 
+svccfg delete -f mdata || true
+svccfg import ${mdata_home}/mdata.xml
+svccfg import ${zoneinit_home}/zoneinit.xml
+}
+fi
+
 if [ ${enable_nfs} ]; then
   cat > ${zoneinit_home}/includes/09-nfs.sh <<EOF
 log "enabling NFS client"
@@ -285,11 +296,7 @@ svcadm enable -r nfs/client
 EOF
 fi
 
-svccfg delete -f mdata || true
-svccfg import ${mdata_home}/mdata.xml
-svccfg import ${zoneinit_home}/zoneinit.xml
 svcadm enable zoneinit
-}
 
 echo
 echo "=> File system prepared successfully, finishing"
