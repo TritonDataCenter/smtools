@@ -24,6 +24,7 @@ if [ ! ${USE_ZONECONFIG} ]; then
   HOSTNAME=$(mdata sdc:hostname || echo "${ZONENAME}")
   DOMAINNAME=$(mdata sdc:dns_domain || echo "local")
 
+  unset i
   while : ${i:=-1}; ((i++)); SERVER=$(mdata sdc:resolvers.${i}); [ ${SERVER} ]; do
     RESOLVERS=(${RESOLVERS[@]} ${SERVER})
   done
@@ -32,6 +33,7 @@ if [ ! ${USE_ZONECONFIG} ]; then
   SWAP_IN_BYTES=$(echo "$(mdata sdc:max_swap)*1024^2" | bc 2>/dev/null)
   TMPFS=$(mdata sdc:tmpfs || echo "$((RAM_IN_BYTES/1024/1024))")m
 
+  unset i
   while : ${i:=-1}; ((i++)); IFACE=$(mdata sdc:nics.${i}.interface); [ ${IFACE} ]; do
     NET_INTERFACES=(${NET_INTERFACES[@]} ${IFACE})
     THIS_IP=$(mdata sdc:nics.${i}.ip)
@@ -76,6 +78,7 @@ else
 
   [ ${TMPFS} ] || TMPFS=$((RAM_IN_BYTES/1024/1024))m
 
+  unset i
   while : ${i:=-1}; ((i++)); IFACE=NET${i}_INTERFACE; [ ${!IFACE} ]; do
     NET_INTERFACES=(${NET_INTERFACES[@]} ${!IFACE})
     eval "${!IFACE}_IP=\${NET${i}_IP}"
