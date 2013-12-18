@@ -356,6 +356,7 @@ echo "* Moving existing software base away..."
 [ -d @PREFIX@/etc ] && mv @PREFIX@/etc ${backup_dir}/etc
 [ -f @PREFIX@/.dlj_license_accepted ] && java_license=yes
 rm -rf @PREFIX@
+hash -r
 /usr/bin/mkdir @PREFIX@
 [ -d ${backup_dir}/etc ] && mv ${backup_dir}/etc @PREFIX@/etc
 [ "${java_license}" == "yes" ] && touch @PREFIX@/.dlj_license_accepted
@@ -367,6 +368,7 @@ echo "* Downloading new software bootstrap kit..."
 
 (cd / && ${fetch} ${pkg_base}/${bootstrap_file} 2>/dev/null |\
  /usr/bin/gzcat | /usr/bin/tar -xf -)
+hash -r
 }
 
 ## Misc tool & config updates
