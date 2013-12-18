@@ -24,7 +24,16 @@
 # Copyright (c) 2013, Joyent, Inc. All rights reserved.
 #
 
+export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 set -o xtrace
+
+# Use platform script instead, if it exists
+[ -f /lib/svc/method/mdata-fetch ] && exec /lib/svc/method/mdata-fetch $@
+
+#
+# The rest is legacy for platforms that do not come with its own
+#
 
 . /lib/svc/share/smf_include.sh
 smf_is_globalzone && exit ${SMF_EXIT_OK}
