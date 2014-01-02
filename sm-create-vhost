@@ -314,7 +314,7 @@ case ${HTTP_TYPE} in
 
 		fi
 
-		echo -ne "  For changes to take you will need:\n\n  Include etc/httpd/virtualhosts/*.conf\n\n  in your ${APACHE_CONFDIR}/httpd.conf and restart apache with\n  svcadm restart pkgsrc/apache.\n\n";
+		echo -ne "  For changes to take you will need:\n\n  Include etc/httpd/virtualhosts/*.conf\n  NameVirtualHost *:80\n\n  in your ${APACHE_CONFDIR}/httpd.conf and restart apache with\n  svcadm restart pkgsrc/apache.\n\n";
 
 		;;
 
