@@ -111,6 +111,8 @@ mysql_importdump() {
 
 	mysql -u${suser} -p${spass} -h ${shost} < ${mhost_dumpfile} 2> /dev/null || failtest "There was a problem importing ${mhost_dumpfile}\n! to slave (${shost}).";
 
+	rm ${mhost_dumpfile}
+
         printf "OK.\n";
 }	
 mysql_configrepl() {
