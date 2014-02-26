@@ -296,7 +296,12 @@ svcadm enable -r nfs/client
 EOF
 fi
 
-svcadm enable zoneinit
+# Wait for zoneinit to enable so that the next step doesn't interfere
+svcadm enable -s zoneinit
+
+# Clear the done property so that zoneinit starts next time this image is booted
+svccfg -s zoneinit 'setprop application/done = false' 2>/dev/null || true
+svcadm refresh zoneinit
 
 echo
 echo "=> File system prepared successfully, finishing"
