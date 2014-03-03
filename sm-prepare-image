@@ -101,7 +101,7 @@ current_ips() {
 }
 files_with_ip() {
   local ip=$1
-  find /etc @PKG_SYSCONFDIR@ -type f | sort | xargs grep -l "${ip}" || true
+  find /etc @PKG_SYSCONFBASE@ -type f | sort | xargs grep -l "${ip}" || true
 }
 
 ### Stuff starts happening here
