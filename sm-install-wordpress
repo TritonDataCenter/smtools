@@ -45,7 +45,7 @@ else
 fi
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 DB_USER=${DB_USER:-root};
 DB_PASS=${DB_PASS:-`mdata-get mysql_pw`};
 WP_USER=wp_$(zonename | awk -F\- '{ print $5 }');

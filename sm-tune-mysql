@@ -35,7 +35,7 @@ while getopts "u:p:" OPTION; do
 done
 
 export LANG=C
-PATH="/mysql/bin:/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="/mysql/bin:@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 
 [[ ! ${DB_USER} ]] && DB_USER="root";
 [[ ! ${DB_PASS} ]] && DB_PASS="$(mdata-get mysql_pw)";
@@ -56,7 +56,7 @@ mysql_check() {
 mysql_get_config() {
 	# Find MySQL config file
 	BASEDIR=$(mysqladmin -u${DB_USER} -p${DB_PASS} variables | grep basedir | awk '{ print $4 }');
-	[[ ${BASEDIR} = "/opt/local" ]] && CONFIG="${BASEDIR}/etc/my.cnf"
+	[[ ${BASEDIR} = "@PREFIX@" ]] && CONFIG="${BASEDIR}/etc/my.cnf"
 	[[ ${BASEDIR} = "/mysql" ]] && CONFIG="${BASEDIR}/my.cnf"
 
 	# Die if config is missing

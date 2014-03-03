@@ -47,7 +47,7 @@ else
 fi
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 mhost_dumpfile="/var/tmp/$(date +%Y-%m-%d_%H-%M-%S)-sync.sql";
 mhost_repluser="repluser";
 mhost_replpass="$(od -An -N9 -x /dev/random | head -1 | tr -d ' ')";

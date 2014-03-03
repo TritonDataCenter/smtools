@@ -19,7 +19,7 @@ exit 2;
 [[ ! $1 ]] && usage;
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 vm_time=$1;
 vm_uuid=$(zonename);
 

@@ -34,7 +34,7 @@ while getopts "p" option; do
 done
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 vm_uuid=$(zonename);
 vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
 
