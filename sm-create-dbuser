@@ -93,12 +93,12 @@ create_postgresdbuser() {
 case $DB_TYPE in
 	mysql)
 		DB_USER=${DB_USER:-root};
-		DB_PASS=${DB_PASS:-`mdata-get mysql_pw`};
+		DB_PASS=${DB_PASS:-`mdata-get mysql_pw &> /dev/null`} || DB_PASS="null";
 		create_mysqldbuser;
 		;;
 	postgresql)
 		DB_USER=${DB_USER:-postgres};
-		DB_PASS=${DB_PASS:-`mdata-get pgsql_pw`};
+		DB_PASS=${DB_PASS:-`mdata-get pgsql_pw &> /dev/null`} || DB_PASS="null";
 		create_postgresdbuser;
 		;;
 	*)
