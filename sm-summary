@@ -9,7 +9,7 @@ set -o pipefail
 #set -o xtrace
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 
 echo "* Gathering VM instance summary..";
 vm_uuid=$(zonename);
@@ -30,7 +30,7 @@ else
         vm_baseimage="NA";
 fi
 
-[[ -f /opt/local/etc/pkg_install.conf ]] && vm_pkgsrc=$(cat /opt/local/etc/pkg_install.conf | awk -F= '{ print $2 }') || vm_pkgsrc="Not installed";
+[[ -f @PKG_SYSCONFBASE@/pkg_install.conf ]] && vm_pkgsrc=$(cat @PKG_SYSCONFBASE@/pkg_install.conf | awk -F= '{ print $2 }') || vm_pkgsrc="Not installed";
 vm_build=$(uname -v);
 vm_nprocs=$(kstat -p -n nprocs_zone_${vm_id} -s usage | awk '{ print $2 }');
 vm_memcap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ printf("%d", $1/1024/1024)}');

@@ -49,15 +49,15 @@ else
 fi
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 HOSTNAME=$(hostname);
 #HTTP_DOCROOT_PARENT=$(echo ${HTTP_DOCROOT} | sed 's,/*[^/]\+/*$,,');
 HTTP_CONFFILE="${HTTP_HOST}.conf";
 HTTP_SSLCONFFILE="${HTTP_HOST}-ssl.conf";
-APACHE_CONFDIR="/opt/local/etc/httpd";
-NGINX_CONFDIR="/opt/local/etc/nginx";
-APACHE_CONFDIR_VHOSTS="/opt/local/etc/httpd/virtualhosts";
-NGINX_CONFDIR_VHOSTS="/opt/local/etc/nginx/virtualhosts";
+APACHE_CONFDIR="@PKG_SYSCONFBASE@/httpd";
+NGINX_CONFDIR="@PKG_SYSCONFBASE@/nginx";
+APACHE_CONFDIR_VHOSTS="@PKG_SYSCONFBASE@/httpd/virtualhosts";
+NGINX_CONFDIR_VHOSTS="@PKG_SYSCONFBASE@/nginx/virtualhosts";
 IP_EXTERNAL=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
 
 apache_create_tomcatconfig() {
@@ -168,7 +168,7 @@ server {\n\
   }\n\
   \n\
   location ~ \.php$ {\n\
-    include /opt/local/etc/nginx/php.conf;\n\
+    include @PKG_SYSCONFBASE@/nginx/php.conf;\n\
   }\n\
 }";
 
@@ -204,7 +204,7 @@ server {\n\
   }\n\
   \n\
   location ~ \.php$ {\n\
-    include /opt/local/etc/nginx/php.conf;\n\
+    include @PKG_SYSCONFBASE@/nginx/php.conf;\n\
   }\n\
 }";
 
@@ -355,7 +355,7 @@ case ${HTTP_TYPE} in
 			nginx_create_config;
 		fi
 
-		echo -ne "  For changes to take you will need:\n\n  include /opt/local/etc/nginx/virtualhosts/*;\n\n  in your ${NGINX_CONFDIR}/nginx.conf http{} block and restart nginx with\n  svcadm restart pkgsrc/nginx.\n\n";
+		echo -ne "  For changes to take you will need:\n\n  include @PKG_SYSCONFBASE@/nginx/virtualhosts/*;\n\n  in your ${NGINX_CONFDIR}/nginx.conf http{} block and restart nginx with\n  svcadm restart pkgsrc/nginx.\n\n";
 		echo -ne "  If you want PHP support with nginx you will need to\n  svcadm enable svc:/pkgsrc/php-fpm.\n\n";
 		;;
 

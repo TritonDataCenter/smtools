@@ -54,7 +54,7 @@ while getopts "pfP:F:o:i:d:" OPTION; do
 done
 
 export LANG=C
-PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
+PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 [[ $# -eq 0 ]] && usage;
 
 process_all_port() {

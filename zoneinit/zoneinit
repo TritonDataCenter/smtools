@@ -1,5 +1,5 @@
 #!/bin/bash
-PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
+PATH=@PREFIX@/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin:/bin:/sbin
 export PATH
 
 set -o errexit

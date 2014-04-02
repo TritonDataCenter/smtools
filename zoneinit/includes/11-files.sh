@@ -8,7 +8,7 @@ fi
 
 log "substituting placeholders for real data in config files"
 
-substitute_files=($(find /etc /opt/local/etc -type f | sort | xargs \
+substitute_files=($(find /etc @PKG_SYSCONFBASE@ -type f | sort | xargs \
   /usr/bin/egrep -l '@(PUBLIC_IP|PRIVATE_IP|DOMAINNAME|HOSTNAME|ZONENAME)@' || true))
 
 for file in ${substitute_files[@]}; do
