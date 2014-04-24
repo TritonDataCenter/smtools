@@ -83,21 +83,18 @@ swap)
 
         vm_swapcap=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s value | awk '{ print $2 }');
 	vm_swapused=$(kstat -p -c zone_caps -n swapresv_zone_${vm_id} -s usage | awk '{ print $2 }');
-	vm_tmpused=$(df -k /tmp | awk '{ if ($1 ~ /swap/) print $3 * 1024 }');
-	vm_swapfree="$(( ${vm_swapcap}-(${vm_swapused}+${vm_tmpused}) ))";
+	vm_swapfree="$(( ${vm_swapcap}-${vm_swapused} ))";
 
 	if [[ -z "${opt_p}" ]]; then
 		cat <<-EOF
 		Memory (Swap) Cap    $((${vm_swapcap}/1024/1024))M
 		Memory (Swap) Used   $((${vm_swapused}/1024/1024))M
-		Memory (/tmp) Used   $((${vm_tmpused}/1024/1024))M
 		Memory (Swap) Free   $((${vm_swapfree}/1024/1024))M
 		EOF
 	else
 		cat <<-EOF
 		vm_swapcap:${vm_swapcap}
 		vm_swapused:${vm_swapused}
-		vm_tmpused:${vm_tmpused}
 		vm_swapfree:${vm_swapfree}
 		EOF
 	fi
