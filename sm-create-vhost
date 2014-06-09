@@ -70,8 +70,7 @@ apache_create_tomcatconfig() {
   <Directory ${HTTP_DOCROOT}>\n\
     Options Indexes IncludesNOEXEC FollowSymLinks MultiViews\n\
     AllowOverride None\n\
-    Order allow,deny\n\
-    Allow from all\n\
+    Require all granted\n\
   </Directory>\n\n\
   ProxyPass /assets !\n\n\
   ProxyRequests Off\n\
@@ -107,8 +106,7 @@ apache_create_config() {
   <Directory ${HTTP_DOCROOT}>\n\
     Options Indexes IncludesNOEXEC FollowSymLinks MultiViews\n\
     AllowOverride None\n\
-    Order allow,deny\n\
-    Allow from all\n\
+    Require all granted\n\
   </Directory>\n\
 </VirtualHost>";
 
@@ -133,8 +131,7 @@ apache_create_sslconfig() {
   <Directory ${HTTP_DOCROOT}>\n\
     Options Indexes IncludesNOEXEC FollowSymLinks MultiViews\n\
     AllowOverride None\n\
-    Order allow,deny\n\
-    Allow from all\n\
+    Require all granted\n\
   </Directory>\n\
   SSLEngine on\n\
   SSLCertificateFile ${APACHE_CONFDIR_VHOSTS}/${HTTP_HOST}.crt\n\
