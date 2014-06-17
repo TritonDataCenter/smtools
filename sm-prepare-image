@@ -187,8 +187,8 @@ EOF
 echo
 echo "=> Checking for possible NFS configuration"
 {
-nfs_state=$(svcs -Ho state nfs/client 2>/dev/null)
-if [ $? -eq 0 ] && [ "${nfs_state}" == "online" ]; then
+nfs_state=$(svcs -Ho state nfs/client 2>/dev/null || true)
+if [ "${nfs_state}" = "online" ]; then
   nfs_mounts=$(awk '{if($4~/nfs/ && $1!~/^#/) print $3}' /etc/vfstab)
   if [ ${nfs_mounts} ]; then
     cat <<EOF
