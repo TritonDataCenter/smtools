@@ -63,7 +63,10 @@ create_mysqldbuser() {
         mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1
         [[ $? -eq 1 ]] && echo "* ERROR - Can't connect with username password specified." && exit 2;
 
-	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'%' identified by '${DB_CREATEPASS}'; flush privileges;"
+	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'%' identified by '${DB_CREATEPASS}'; flush privileges;" > /dev/null 2>&1
+	[[ $? -eq 1 ]] && echo "* ERROR - There was an error creating your user." && exit 2;
+
+	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'localhost' identified by '${DB_CREATEPASS}'; flush privileges;" > /dev/null 2>&1
 	[[ $? -eq 1 ]] && echo "* ERROR - There was an error creating your user." && exit 2;
 
 	[[ ${DB_NAME} = "*" ]] && DB_NAME="all";
