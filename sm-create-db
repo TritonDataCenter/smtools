@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Create a MySQL/PostgreSQL database for a SmartMachine.
-# Copyright (c) 2013 Joyent Inc., All rights reserved.
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 
 usage() {
 cat << EOF

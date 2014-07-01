@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Provides vm instance cpu utilization information.
-# Copyright (c) 2013 Joyent Inc., All rights reserved.
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 
 set -o errexit
 set -o pipefail

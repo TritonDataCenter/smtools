@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Shuts down a VM.
-# Copyright (c) 2013 Joyent Inc., All rights reserved.
+# Copyright (c) 2014 Joyent Inc., All rights reserved.
 
 export LANG=C
 PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
