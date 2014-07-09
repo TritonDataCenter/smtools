@@ -312,7 +312,7 @@ case ${http_type} in
 			EOF
 		fi
 
-		if [[ $(grep -q "^Listen 0.0.0.0:443$" ${apache_confdir}/httpd.conf)$? -eq 1 ]]; then
+		if [[ ${opt_s} ]] && [[ $(grep -q "^Listen 0.0.0.0:443$" ${apache_confdir}/httpd.conf)$? -eq 1 ]]; then
 			echo -ne "  For changes to take you will need:\n\n  Include etc/httpd/virtualhosts/*.conf\n  Listen 0.0.0.0:443\n\n  in your ${apache_confdir}/httpd.conf and restart apache with:\n  # svcadm restart pkgsrc/apache\n\n";
 		else
 			echo -ne "  For changes to take you will need:\n\n  Include etc/httpd/virtualhosts/*.conf\n\n  in your ${apache_confdir}/httpd.conf and restart apache with:\n  # svcadm restart pkgsrc/apache\n\n";
