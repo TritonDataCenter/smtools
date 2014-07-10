@@ -87,12 +87,12 @@ apache_create_config() {
 	# Create php part of configuration
 	if [[ ${opt_p} ]]; then
 		cat >> ${apache_confdir_vhosts}/${http_conffile} <<-EOF
-		  DirectoryIndex index.php index.html index.htm
-		  ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://127.0.0.1:9000/home/admin/web/public/$1
+		  DirectoryIndex index.html index.htm index.php
+		  ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://127.0.0.1:9000/home/admin/web/public/\$1
 		EOF
 	else
 		cat >> ${apache_confdir_vhosts}/${http_conffile} <<-EOF
-		  DirectoryIndex index.html index.htm
+		  DirectoryIndex index.html index.htm index.php
 		EOF
 	fi
 
@@ -138,12 +138,12 @@ apache_create_sslconfig() {
 	# Create php part of configuration
 	if [[ ${opt_p} ]]; then
 		cat >> ${apache_confdir_vhosts}/${http_sslconffile} <<-EOF
-		  DirectoryIndex index.php index.html index.htm
-		  ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://127.0.0.1:9000/home/admin/web/public/$1
+		  DirectoryIndex index.html index.htm index.php
+		  ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://127.0.0.1:9000/home/admin/web/public/\$1
 		EOF
 	else
 		cat >> ${apache_confdir_vhosts}/${http_sslconffile} <<-EOF
-		  DirectoryIndex index.html index.htm
+		  DirectoryIndex index.html index.htm index.php
 		EOF
 	fi
 
