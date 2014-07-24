@@ -22,6 +22,7 @@ Arguments:
 Options:
    
     -p               PHP support (php passed to php-fpm).
+    -r               Rails support (mod_passenger, apache only).
     -s               SSL support (insert your own certificates).
     -t               Tomcat support (proxy 8080 to localhost).
 
@@ -29,10 +30,13 @@ EOF
 exit 1;
 }
 
-while getopts "pst" option; do
+while getopts "prst" option; do
         case ${option} in
                 p)
                         opt_p="true";
+                        ;;
+                r)
+                        opt_r="true";
                         ;;
                 s)
                         opt_s="true";
@@ -51,8 +55,12 @@ fail() {
         exit 1;
 }
 
+[[ ${opt_r} ]] && [[ "$2" = "nginx" ]] && fail "Nginx passenger support is not available yet.";
 [[ ${opt_s} ]] && [[ ${opt_t} ]] && fail "You must specify -s or -t, not both.";
 [[ ${opt_p} ]] && [[ ${opt_t} ]] && fail "You must specify -t or -p, not both.";
+[[ ${opt_r} ]] && [[ ${opt_p} ]] && fail "You must specify -r or -p, not both.";
+[[ ${opt_r} ]] && [[ ${opt_t} ]] && fail "You must specify -r or -t, not both.";
+[[ ${opt_r} ]] && [[ ${opt_s} ]] && fail "You must specify -r or -s, not both.";
 
 shift $(($OPTIND - 1))
 if [[ $# = 3 ]]; then
@@ -62,6 +70,7 @@ if [[ $# = 3 ]]; then
 else
         usage;
 fi
+
 
 export LANG=C
 PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
@@ -160,7 +169,25 @@ apache_create_sslconfig() {
 	</VirtualHost>
 	EOF
 }
-
+apache_create_railsconfig() {
+	cat > ${apache_confdir_vhosts}/${http_conffile} <<-EOF
+	<VirtualHost *:80>
+	  ServerName ${http_host}
+	  ServerAlias www.${http_host}
+	  ServerAlias *.${http_host}
+	  DocumentRoot ${http_docroot}
+	  RailsEnv development
+	  SetEnv PATH /usr/bin:/usr/sbin:/opt/local/bin:/opt/local/sbin
+	  PassengerDefaultUser www
+	  PassengerDefaultGroup www
+	  <Directory ${http_docroot}>
+	    Allow from all
+	    Options -MultiViews
+	    Require all granted
+	  </Directory>
+	</VirtualHost>
+	EOF
+}
 nginx_create_config() {
 	# Create first part of configuration
 	cat > ${nginx_confdir_vhosts}/${http_conffile} <<-EOF
@@ -298,6 +325,20 @@ case ${http_type} in
 			    Proxy:         Pass/Reverse to http://localhost:8080
 
 			EOF
+		elif [[ ${opt_r} ]]; then
+			[[ -s ${apache_confdir_vhosts}/${http_conffile} ]] && fail "The configuration file ${apache_confdir_vhosts}/${http_conffile} already exists.";
+			apache_create_railsconfig;
+
+			cat <<-EOF 
+			* Created Apache (Rails) configuration ${apache_confdir_vhosts}/${http_conffile}.
+			  Settings:
+			    Hosts:    ${http_host} *.${http_host} www.${http_host}
+			    Port:     80
+			    Docroot:  ${http_docroot}
+			    RailsEnv: development	
+
+			EOF
+
 		else
 			[[ -s ${apache_confdir_vhosts}/${http_conffile} ]] && fail "The configuration file ${apache_confdir_vhosts}/${http_conffile} already exists.";
 			apache_create_config;
@@ -319,10 +360,32 @@ case ${http_type} in
 		fi
 
 		if [[ ${opt_p} ]] && [[ $(pkgin list | awk '{ print $1 }' | grep -q "php[0-9][0-9]-fpm")$? -eq 1 ]]; then
-			phpfpm_version=$(pkgin list | awk '{ print $1 }' | grep "^php[0-9][0-9]-fpm");
-			echo -ne "  For PHP support with apache you will need to:\n  # pkgin install ${phpfpm_version}\n  # svcadm enable pkgsrc/php-fpm\n\n";
+			echo -ne "  For PHP support with apache you will need to:\n  # pkgin install phpXX-fpm\n  # svcadm enable pkgsrc/php-fpm\n\n  replacing 'XX' with your appropriate version.\n\n";
 		fi
 
+		if [[ ${opt_r} ]] && [[ $(pkgin list | awk '{ print $1 }' | egrep -q "ap[0-9][0-9]?-ruby[0-9][0-9][0-9]?-passenger")$? -eq 1 ]]; then
+			echo -ne "  For Rails support (mod_passenger) with apache you will need to:\n  # pkgin install apXX-ruby-XXX-passenger\n\n  and you will need:\n\n";
+			cat <<-EOF 
+			  LoadModule passenger_module lib/httpd/mod_passenger.so
+			  <IfModule mod_passenger.c>
+			    PassengerRoot /opt/local/lib/ruby/vendor_ruby/phusion_passenger/locations.ini
+			    PassengerRuby /opt/local/bin/rubyXXX
+			  </IfModule>
+
+			EOF
+			echo -ne "  in your ${apache_confdir}/httpd.conf replacing 'XX' with your appropriate\n  versions.\n\n";
+		elif [[ ${opt_r} ]]; then
+			echo -ne "  For Rails support (mod_passenger) with apache you will need:\n\n";
+			cat <<-EOF 
+			  LoadModule passenger_module lib/httpd/mod_passenger.so
+			  <IfModule mod_passenger.c>
+			    PassengerRoot /opt/local/lib/ruby/vendor_ruby/phusion_passenger/locations.ini
+			    PassengerRuby /opt/local/bin/rubyXXX
+			  </IfModule>
+
+			EOF
+			echo -ne "  in your ${apache_confdir}/httpd.conf replacing 'XX' with your appropriate\n  versions.\n\n";
+		fi
 		;;
 
 	nginx|Nginx)
@@ -392,8 +455,7 @@ case ${http_type} in
 		echo -ne "  For changes to take you will need:\n\n  include /opt/local/etc/nginx/virtualhosts/*;\n\n  in your ${nginx_confdir}/nginx.conf http{} block and restart nginx with:\n  # svcadm restart pkgsrc/nginx\n\n";
 
 		if [[ ${opt_p} ]] && [[ $(pkgin list | awk '{ print $1 }' | grep -q "php[0-9][0-9]-fpm")$? -eq 1 ]]; then
-			phpfpm_version=$(pkgin list | awk '{ print $1 }' | grep "^php[0-9][0-9]-fpm");
-			echo -ne "  For PHP support with nginx you will need to:\n  # pkgin install ${phpfpm_version}\n  # svcadm enable pkgsrc/php-fpm\n\n";
+			echo -ne "  For PHP support with nginx you will need to:\n  # pkgin install phpXX-fpm\n  # svcadm enable pkgsrc/php-fpm\n\n  replacing 'XX' with your appropriate version.\n\n";
 		fi
 
 		;;
