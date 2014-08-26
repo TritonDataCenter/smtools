@@ -3,8 +3,13 @@
 # Create a MySQL/PostgreSQL database for a SmartMachine.
 # Copyright (c) 2014 Joyent Inc., All rights reserved.
 
+set -o errexit
+set -o pipefail
+#set -o nounset
+#set -o xtrace
+
 usage() {
-cat << EOF
+        cat <<- EOF >&2
 
 Usage: $0 [options] TYPE DATABASE
 
@@ -86,12 +91,12 @@ create_postgresdb() {
 case $DB_TYPE in
 	mysql)
 		DB_USER=${DB_USER:-root};
-		DB_PASS=${DB_PASS:-`mdata-get mysql_pw &> /dev/null`} || DB_PASS="null";
+		DB_PASS=${DB_PASS:-$(mdata-get mysql_pw 2> /dev/null)} || DB_PASS="null";
 		create_mysqldb;
 		;;
 	postgresql)
 		DB_USER=${DB_USER:-postgres};
-		DB_PASS=${DB_PASS:-`mdata-get pgsql_pw &> /dev/null`} || DB_PASS="null";
+		DB_PASS=${DB_PASS:-$(mdata-get pgsql_pw 2> /dev/null)} || DB_PASS="null";
 		create_postgresdb;
 		;;
 	*)
