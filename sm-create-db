@@ -61,8 +61,8 @@ create_mysqldb() {
         mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1
         [[ $? -eq 1 ]] && echo "* ERROR - Can't connect with username password specified." && exit 2;
 
-	mysql -u${DB_USER} -p${DB_PASS} -e "use ${DB_NAME};" > /dev/null 2>&1
-	[[ $? -eq 0 ]] && echo "* ERROR - Database ${DB_NAME} already exists." && exit 2;
+        [[ $(mysql -u${DB_USER} -p${DB_PASS} -e "use ${DB_NAME};" &>/dev/null)$? -eq 1 ]] || \
+                { echo "* ERROR - Database ${DB_NAME} already exists." && exit 2; }
 
 	mysql -u${DB_USER} -p${DB_PASS} -e "create database ${DB_NAME};" > /dev/null 2>&1
 	[[ $? -eq 1 ]] && echo "* ERROR - There was an error creating your database." && exit 2;
