@@ -57,7 +57,7 @@ list_mysqldbusers() {
 
 	echo "* Listing MySQL users for ${ZONENAME}..";
 
-	mysql -u${DB_USER} -p${DB_PASS} -s -e "select User,Host from mysql.user;"
+	mysql -u${DB_USER} -p${DB_PASS} -s -e "select User,Host from mysql.user;" 2> /dev/null
 	[[ $? -eq 1 ]] && echo "* ERROR - There was an error listing the database users." && exit 2;
 }
 list_postgresdbusers() {

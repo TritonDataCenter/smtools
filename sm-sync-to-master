@@ -22,12 +22,16 @@ Arguments:
    
     MASTER_USER             User of master host.  Must be a user with SUPER
                             privileges and GRANT option.
-    MASTER_PASS             Password of master host user.
+    MASTER_PASS             Password of master host user.  (Passwords with
+                            special characters must be surrounded in single
+                            quotes).
     MASTER_HOST             Host/IP of master. 
 
     SLAVE_USER              User of slave host (this host).  Must be a user
                             with SUPER privileges.
-    SLAVE_PASS              Password of slave host user.
+    SLAVE_PASS              Password of slave host user.  (Passwords with
+                            special characters must be surrounded in single
+                            quotes).
     SLAVE_HOST              Host/IP of slave (this host).
 
 EOF
@@ -47,13 +51,14 @@ else
 fi
 
 export LANG=C
-PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 mhost_dumpfile="/var/tmp/$(date +%Y-%m-%d_%H-%M-%S)-sync.sql";
 mhost_repluser="repluser";
 mhost_replpass="$(od -An -N9 -x /dev/random | head -1 | tr -d ' ')";
 
 failtest() {
         printf "ERROR.\n\n! $*\n\n" >&2;
+	rm ${mhost_dumpfile} 2> /dev/null
         exit 2;
 }
 mysql_header() {
@@ -73,7 +78,7 @@ mysql_sanitycheck() {
         [[ ! `pgrep mysqld` ]] && failtest "Mysql must be running on the slave host (${shost}).";
 
 	# Check we can connect to the slave host (this host)
-        [[ $(mysql -u${suser} -p${spass} -h ${shost} -e "select version();" &> /dev/null)$? -ne 0 ]] && failtest "Unable to connect to slave host (${shost}).  Things to check.\n!\n! Check that you are using the correct user, pass, and host combination.\n!\n! You can verify your conneciton with:\n! # mysql -u${suser} -p${spass} -h ${shost}\n";
+        [[ $(mysql -u${suser} -p${spass} -h ${shost} -e "select version();" &> /dev/null)$? -ne 0 ]] && failtest "Unable to connect to slave host (${shost}).  Things to check:\n!\n! Check that you are using the correct user, pass, and host combination.\n! (Passwords with special characters must be surrounded in single quotes).\n!\n! You can verify your conneciton with:\n! # mysql -u${suser} -p${spass} -h ${shost}\n";
 
 	# Check that the slave host has a unique server-id
 	shost_serverid=$(mysql -u${suser} -p${spass} -h ${shost} -sN -e "show variables like 'server_id'" 2> /dev/null | awk '{ print $2 }');
@@ -83,7 +88,7 @@ mysql_sanitycheck() {
 	[[ $(mysql -u${suser} -p${spass} -h ${shost} -sN -e "show variables like 'log_bin'" 2> /dev/null | awk '{ print $2 }') = "OFF" ]] && failtest "Slave host (${shost}) doesn't have log-bin enabled.";
 
 	# Check that we can connect to the master host
-        [[ $(mysql -u${muser} -p${mpass} -h ${mhost} -e "select version();" &> /dev/null)$? -ne 0 ]] && failtest "Unable to connect to master host (${mhost}).  Things to check.\n!\n! You are using the correct user, pass, and host combination.\n!\n! The master host is not listening on localhost.\n!\n! You are using a privileged user on the master host.  Create with:\n! mysql> grant all privileges on *.* to 'smsync'@'10.%%' identified by\n! 'password' with GRANT OPTION;\n!\n! You can verify your connection with:\n! # mysql -u${muser} -p${mpass} -h ${mhost}\n";
+        [[ $(mysql -u${muser} -p${mpass} -h ${mhost} -e "select version();" &> /dev/null)$? -ne 0 ]] && failtest "Unable to connect to master host (${mhost}).  Things to check:\n!\n! You are using the correct user, pass, and host combination.\n! (Passwords with special characters must be surrounded in single quotes).\n!\n! The master host is not listening on localhost.\n!\n! You are using a privileged user on the master host.  Create with:\n! mysql> grant all privileges on *.* to 'smsync'@'10.%%' identified by\n! 'password' with GRANT OPTION;\n!\n! You can verify your connection with:\n! # mysql -u${muser} -p${mpass} -h ${mhost}\n";
 
 	# Check that the master host has a unique server-id
 	mhost_serverid=$(mysql -u${muser} -p${mpass} -h ${mhost} -sN -e "show variables like 'server_id'" 2> /dev/null | awk '{ print $2 }');
@@ -93,7 +98,7 @@ mysql_sanitycheck() {
 	[[ $(mysql -u${muser} -p${mpass} -h ${mhost} -sN -e "show variables like 'log_bin'" 2> /dev/null | awk '{ print $2 }') = "OFF" ]] && failtest "Master host (${mhost}) doesn't have log-bin enabled.";
 
 	# Check that the master and slave have unique server-ids
-	[[ "${shost_serverid}" = "${mhost_serverid}" ]] && failtest "Master host (${mhost}) and Slave host (${shost}) have the same\n! server-id value (${shost_serverid}).  These values must be unique.";
+	[[ "${shost_serverid}" = "${mhost_serverid}" ]] && failtest "Master host (${mhost}) and Slave host (${shost}) have the same\n! server-id value (${shost_serverid}).  These values must be unique.\n!\n! Change the 'server-id' value in /opt/local/etc/my.cnf and restart mysql\n! # svcadm restart percona";
 
         printf "OK.\n";
 }
@@ -110,8 +115,6 @@ mysql_importdump() {
         printf "%-70s" "* Importing dump (${mhost_dumpfile_size}) to slave host (${shost})..";
 
 	mysql -u${suser} -p${spass} -h ${shost} < ${mhost_dumpfile} 2> /dev/null || failtest "There was a problem importing ${mhost_dumpfile}\n! to slave (${shost}).";
-
-	rm ${mhost_dumpfile}
 
         printf "OK.\n";
 }	
@@ -144,7 +147,7 @@ mysql_checkrepl() {
 		printf "OK.\n\n";
 		printf "Slave host (${shost}) is now replicating from Master host (${mhost}).\n\n";
 	else
-		failtest "There was an error configuring replication.  Things to check.\n!\n! On the slave host (${shost}) check the output of:\n! mysql> show slave status \G\n!\n! Check the mysql error log ${shost_logerror}.";
+		failtest "There was an error configuring replication.  Things to check:\n!\n! On the slave host (${shost}) check the output of:\n! mysql> show slave status \G\n!\n! Check the mysql error log ${shost_logerror}.";
 	fi
 }
 
@@ -165,3 +168,6 @@ mysql_configrepl;
 
 # Check that the replication threads are showing good
 mysql_checkrepl;
+
+# Remove dump file
+rm ${mhost_dumpfile} 2> /dev/null
