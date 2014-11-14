@@ -90,7 +90,10 @@ gsed -i "s/password_here/${WP_PASS}/g" ${WP_DIR}/wp-config.php
 
 # Create database, user and pass
 sm-create-db -u${DB_USER} -p${DB_PASS} mysql ${WP_DB}
-
 sm-create-dbuser -u${DB_USER} -p${DB_PASS} mysql ${WP_USER} ${WP_PASS} ${WP_DB}
+
+# Fix permissions on wp-content to allow uploads
+chgrp www ${WP_DIR}/wp-content
+chmod -R g+rwx ${WP_DIR}/wp-content
 
 echo "* Visit http://x.x.x.x/wp-admin/install.php to finish the install.";
