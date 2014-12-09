@@ -220,6 +220,7 @@ nginx_create_config() {
 
 			  location / {
 			    index index.php index.html index.htm;
+			    try_files \$uri \$uri/ /index.php?q=\$request_uri;
 			  }
 			  location ~ \.php$ {
 			    include /opt/local/etc/nginx/fastcgi.conf;
@@ -262,6 +263,7 @@ nginx_create_sslconfig() {
 		cat >> ${nginx_confdir_vhosts}/${http_sslconffile} <<-EOF
 		  location / {
 		    index index.php index.html index.htm;
+		    try_files \$uri \$uri/ /index.php?q=\$request_uri;
 		  }
 		  location ~ \.php$ {
 		    include /opt/local/etc/nginx/fastcgi.conf;
