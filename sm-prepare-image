@@ -179,8 +179,8 @@ echo
 echo "=> Cleaning up old network configuration"
 {
 cat > /etc/hosts <<EOF
-::1        localhost
-127.0.0.1  localhost loghost
+::1		localhost
+127.0.0.1	localhost localhost.local loghost
 EOF
 }
 
