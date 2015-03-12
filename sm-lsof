@@ -3,7 +3,7 @@
 # A lsof replacement for SmartMachine's and a simple
 # alternative to pfiles, fuser.  For detailed
 # information of a process use 'pfiles <pid>'.
-# Copyright (c) 2014 Joyent Inc., All rights reserved.
+# Copyright (c) 2015 Joyent Inc., All rights reserved.
 
 usage() {
 cat << EOF

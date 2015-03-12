@@ -1,7 +1,12 @@
 #!/usr/bin/bash
 #
-# Create a MySQL/PostgreSQL database user for a SmartMachine.
-# Copyright (c) 2014 Joyent Inc., All rights reserved.
+# Create a MySQL/PostgreSQL database user for a SmartOS VM.
+# Copyright (c) 2015 Joyent Inc., All rights reserved.
+
+set -o errexit
+set -o pipefail
+#set -o nounset
+#set -o xtrace
 
 usage() {
 cat << EOF
@@ -50,45 +55,43 @@ else
 fi
 
 export LANG=C
-PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
+PATH="/opt/local/bin:/opt/local/gnu/bin:/opt/local/sbin:/usr/bin:/usr/sbin";
 [[ ${DB_NAME} = "all" ]] && DB_NAME='*';
 [[ ${DB_TYPE} = "postgresql" ]] && [[ ${DB_NAME} = "*" ]] && echo "* ERROR - 'all' can only be used with MySQL." && exit 2; 
 
 create_mysqldbuser() {
-	hash mysql &>/dev/null
-	[[ $? -eq 1 ]] && echo "* ERROR - mysql was not found in your PATH." && exit 2;
+	hash mysql 2>/dev/null || { echo "* ERROR - mysql was not found in your PATH." && exit 2; }
 
-        [[ ! `pgrep mysqld` ]] && echo "* ERROR - mysql must be running to list the databases." && exit 2;
+        [[ ! `pgrep mysqld` ]] && echo "* ERROR - mysql must be running to create a user." && exit 2;
 
-        mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1
-        [[ $? -eq 1 ]] && echo "* ERROR - Can't connect with username password specified." && exit 2;
+        mysql -u${DB_USER} -p${DB_PASS} -e "select version();" > /dev/null 2>&1 || \
+                { echo "* ERROR - Can't connect with username password specified." && exit 2; }
 
-	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'%' identified by '${DB_CREATEPASS}'; flush privileges;" > /dev/null 2>&1
-	[[ $? -eq 1 ]] && echo "* ERROR - There was an error creating your user." && exit 2;
+	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'%' identified by '${DB_CREATEPASS}'; flush privileges;" > /dev/null 2>&1 || \
+		{ echo "* ERROR - There was an error creating your user." && exit 2; }
 
-	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'localhost' identified by '${DB_CREATEPASS}'; flush privileges;" > /dev/null 2>&1
-	[[ $? -eq 1 ]] && echo "* ERROR - There was an error creating your user." && exit 2;
+	mysql -u${DB_USER} -p${DB_PASS} -e "grant all on ${DB_NAME}.* to '${DB_CREATEUSER}'@'localhost' identified by '${DB_CREATEPASS}'; flush privileges;" > /dev/null 2>&1 || \
+		{ echo "* ERROR - There was an error creating your user." && exit 2; }
 
 	[[ ${DB_NAME} = "*" ]] && DB_NAME="all";
 
 	echo "* Created MySQL user ${DB_CREATEUSER} pass ${DB_CREATEPASS} with access to ${DB_NAME} from anywhere.";
 }
 create_postgresdbuser() {
-	hash psql &>/dev/null
-	[[ $? -eq 1 ]] && echo "* ERROR - psql was not found in your PATH." && exit 2;
+	hash psql 2>/dev/null || { echo "* ERROR - psql was not found in your PATH." && exit 2; }
 
 	export PGPASSWORD=${DB_PASS};
 
-        [[ ! `pgrep postgres` ]] && echo "* ERROR - postgresql must be running to list the databases." && exit 2;
+        [[ ! `pgrep postgres` ]] && echo "* ERROR - postgresql must be running to create a user." && exit 2;
 
-        psql -U ${DB_USER} -c "select datname from pg_database;" > /dev/null 2>&1
-        [[ $? > 0 ]] && echo "* ERROR - Can't connect with username password specified." && exit 2;
+        psql -U ${DB_USER} -c "select datname from pg_database;" > /dev/null 2>&1 || \
+                { echo "* ERROR - Can't connect with username password specified." && exit 2; }
 
 	[[ ! $(psql -U ${DB_USER} --list | egrep "\b${DB_NAME}\b") ]] && echo "* ERROR - Database ${DB_NAME} doesn't exist." && exit 2;
 	[[ $(psql -U ${DB_USER} -t -A -c "select usename from pg_user where usename = '${DB_CREATEUSER}'";) ]] && echo "* ERROR - Username ${DB_CREATEUSER} already exists." && exit 2;
 
-	psql -U ${DB_USER} -c "create role ${DB_CREATEUSER} with password '${DB_CREATEPASS}' nosuperuser nocreatedb nocreaterole inherit login; alter database ${DB_NAME} owner to ${DB_CREATEUSER};" > /dev/null 2>&1
-	[[ $? > 0 ]] && echo "* ERROR - There was an error creating your user." && exit 2;
+	psql -U ${DB_USER} -c "create role ${DB_CREATEUSER} with password '${DB_CREATEPASS}' nosuperuser nocreatedb nocreaterole inherit login; alter database ${DB_NAME} owner to ${DB_CREATEUSER};" > /dev/null 2>&1 || \
+		{ echo "* ERROR - There was an error creating your user." && exit 2; }
 
 	echo "* Created PostgreSQL user ${DB_CREATEUSER} pass ${DB_CREATEPASS} with access to ${DB_NAME}.";
 }
@@ -96,12 +99,12 @@ create_postgresdbuser() {
 case $DB_TYPE in
 	mysql)
 		DB_USER=${DB_USER:-root};
-		DB_PASS=${DB_PASS:-`mdata-get mysql_pw 2> /dev/null`} || DB_PASS="null";
+		DB_PASS=${DB_PASS:-$(mdata-get mysql_pw 2> /dev/null)} || DB_PASS="null";
 		create_mysqldbuser;
 		;;
 	postgresql)
 		DB_USER=${DB_USER:-postgres};
-		DB_PASS=${DB_PASS:-`mdata-get pgsql_pw 2> /dev/null`} || DB_PASS="null";
+		DB_PASS=${DB_PASS:-$(mdata-get pgsql_pw 2> /dev/null)} || DB_PASS="null";
 		create_postgresdbuser;
 		;;
 	*)
