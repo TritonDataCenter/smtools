@@ -38,8 +38,8 @@ PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 vm_uuid=$(zonename);
 vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
 
-vm_kstat_cpu_cap=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s value | awk '{print $2}');
-vm_kstat_cpu_used=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s usage | awk '{print $2}');
+vm_kstat_cpu_cap=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s value || true | awk '{print $2}');
+vm_kstat_cpu_used=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s usage || true | awk '{print $2}');
 vm_cpu_cap_used=$(echo -e "scale=2; (${vm_kstat_cpu_used}/${vm_kstat_cpu_cap})*100" | bc 2>/dev/null | sed 's/\.[0-9]*//');
 [[ ! ${cpu_used} ]] && cpu_used="NA";
 
@@ -47,4 +47,4 @@ vm_cpu_used=$(prstat -Z 1 1 | awk -v zone=${vm_uuid} '$8 ~ zone { print $7 }' | 
 
 echo "* Gathering cpu infomation for ${vm_uuid}..";
 [[ "${opt_p}" ]] && echo "cpu_util:${vm_cpu_used}" || echo "CPU Used: ${vm_cpu_used} %";
-[[ "${opt_p}" ]] && echo "cpu_used:${vm_cpu_cap_used}" || echo "CPU Cap Used: ${vm_cpu_cap_used} %";
+[[ "${opt_p}" ]] && echo "cpu_used:${vm_cpu_cap_used:-NA}" || echo "CPU Cap Used: ${vm_cpu_cap_used:-N/A for this VM type}${vm_cpu_cap_used+ %}";
