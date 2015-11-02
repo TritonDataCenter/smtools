@@ -519,6 +519,4 @@ necessary changes, and because 'innodb_log_file_size' has likely
 been modified you need to remove the old log files first before
 starting.  If you don't do this properly then MySQL won't start.
 
-See: http://wiki.joyent.com/display/jpc2/Performance+and+Tuning
-
 EOF
