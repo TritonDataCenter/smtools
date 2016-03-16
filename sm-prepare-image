@@ -303,6 +303,13 @@ svcadm enable -s zoneinit
 svccfg -s zoneinit 'setprop application/done = false' 2>/dev/null || true
 svcadm refresh zoneinit
 
+# IMAGE-895: Zoneinit needs mdata:fetch and mdata:execute to be disabled.
+for fmri in svc:/smartdc/mdata:fetch svc:/smartdc/mdata:execute; do
+    if [[ $(svcs -Ho state $fmri 2>/dev/null || true) != "disabled" ]]; then
+        svcadm disable $fmri
+    fi
+done
+
 echo
 echo "=> File system prepared successfully, finishing"
 {
