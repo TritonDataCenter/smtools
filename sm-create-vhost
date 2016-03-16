@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 #
 # Creates simple Apache/Nginx configurations for SmartOS VMs.
-# Copyright (c) 2015 Joyent Inc., All rights reserved.
+# Copyright (c) 2016 Joyent Inc., All rights reserved.
 
 set -o errexit
 set -o pipefail

@@ -4,7 +4,7 @@
 # best values to be set in your configuration file.
 # This tuner assumes you are giving 70% of the SM 
 # memory to MySQL only.
-# Copyright (c) 2015 Joyent Inc., All rights reserved.
+# Copyright (c) 2016 Joyent Inc., All rights reserved.
 
 usage() {
 cat << EOF
