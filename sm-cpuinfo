@@ -38,8 +38,8 @@ PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 vm_uuid=$(zonename);
 vm_id=$(zoneadm list -p | awk -F: '{ print $1 }');
 
-vm_kstat_cpu_cap=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s value | awk '{print $2}');
-vm_kstat_cpu_used=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s usage | awk '{print $2}');
+vm_kstat_cpu_cap=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s value | awk '{print $2}' || true);
+vm_kstat_cpu_used=$(kstat -p -c zone_caps -n cpucaps_zone_${vm_id} -s usage | awk '{print $2}' || true);
 vm_cpu_cap_used=$(echo -e "scale=2; (${vm_kstat_cpu_used}/${vm_kstat_cpu_cap})*100" | bc 2>/dev/null | sed 's/\.[0-9]*//');
 [[ ! ${cpu_used} ]] && cpu_used="NA";
 
