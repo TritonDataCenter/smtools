@@ -3,6 +3,9 @@
 # Set the hostname of a VM.
 # Copyright (c) 2016 Joyent Inc., All rights reserved.
 
+set -o errexit
+set -o pipefail
+
 usage() {
 cat << EOF >&2
 
