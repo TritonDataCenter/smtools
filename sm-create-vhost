@@ -81,7 +81,7 @@ apache_confdir="/opt/local/etc/httpd";
 nginx_confdir="/opt/local/etc/nginx";
 apache_confdir_vhosts="/opt/local/etc/httpd/virtualhosts";
 nginx_confdir_vhosts="/opt/local/etc/nginx/virtualhosts";
-ip_external=$(ifconfig -a | grep -A 1 net0 | awk '/inet/ { print $2 }');
+ip_external=$(ifconfig net0 | awk '/inet/ { print $2 }');
 
 apache_create_config() {
 	# Create first part of configuration
