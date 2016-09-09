@@ -21,17 +21,23 @@ export LANG=C
 PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 vm_host="$1";
 vm_uuid=$(zonename);
-ip_external=$(ifconfig net0 | awk '/inet/ { print $2 }');
-ip_internal=$(ifconfig net1 | awk '/inet/ { print $2 }');
+hosts_file='/etc/inet/hosts';
+ip_external=$(mdata-get sdc:nics | json -ag ip -c 'this.nic_tag === "external"' 2>/dev/null);
+ip_internal=$(mdata-get sdc:nics | json -ag ip -c 'this.nic_tag === "internal"' 2>/dev/null);
 
 echo "* Setting hostname for ${vm_uuid}..";
 
-cat > /etc/inet/hosts << EOF
-::1		localhost
-127.0.0.1	localhost loghost
-${ip_external}	${vm_host}
-${ip_internal}	${vm_uuid}	loghost
+cat > ${hosts_file} << EOF
+::1             localhost
+127.0.0.1       localhost loghost
 EOF
+
+if [[ -n ${ip_external} ]]; then
+    printf '%s\t%s\n' "${ip_external///*}" "${vm_host}" >> "${hosts_file}"
+fi
+if [[ -n ${ip_internal} ]]; then
+    printf '%s\t%s\tloghost\n' "${ip_internal///*}" "${vm_uuid}" >> "${hosts_file}"
+fi
 
 echo "${vm_host}" > /etc/nodename
 
