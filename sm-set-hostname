@@ -22,8 +22,8 @@ PATH="@PREFIX@/bin:@PREFIX@/gnu/bin:@PREFIX@/sbin:/usr/bin:/usr/sbin";
 vm_host="$1";
 vm_uuid=$(zonename);
 hosts_file='/etc/inet/hosts';
-ip_external=$(mdata-get sdc:nics | json -ag ip -c 'this.nic_tag === "external"' 2>/dev/null);
-ip_internal=$(mdata-get sdc:nics | json -ag ip -c 'this.nic_tag === "internal"' 2>/dev/null);
+ip_external=$(grep 'PUBLIC_IP=' /var/svc/log/system-zoneinit\:default.log | awk -F= '{ print $2 }');
+ip_internal=$(grep 'PRIVATE_IP=' /var/svc/log/system-zoneinit\:default.log | awk -F= '{ print $2 }');
 
 echo "* Setting hostname for ${vm_uuid}..";
 
