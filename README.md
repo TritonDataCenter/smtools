@@ -1,2 +1,2 @@
 # smtools
-Joyent Container Instance Tools
+Tools for managing SmartOS VMs
