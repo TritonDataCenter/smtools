@@ -53,12 +53,12 @@ case ${type} in
 rss)
 	echo "* Gathering rss memory infomation for ${vm_uuid}..";
 
-	vm_memcap=$(kstat -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ print $1 }');
-	vm_memused=$(kstat -c zone_memory_cap -s rss -p | cut -f2 | awk '{ print $1 }');
+	vm_memcap=$(kstat -m memory_cap -c zone_memory_cap -s physcap -p | cut -f2 | awk '{ print $1 }');
+	vm_memused=$(kstat -m memory_cap -c zone_memory_cap -s rss -p | cut -f2 | awk '{ print $1 }');
 	vm_memfree=$(echo "${vm_memcap}-${vm_memused}" | bc);
 	vm_memfree="$(( ${vm_memcap}-${vm_memused} ))";
-	vm_memnover=$(kstat -c zone_memory_cap -s nover -p | cut -f2);
-	vm_mempgout=$(kstat -c zone_memory_cap -s pagedout -p | cut -f2);
+	vm_memnover=$(kstat -m memory_cap -c zone_memory_cap -s nover -p | cut -f2);
+	vm_mempgout=$(kstat -m memory_cap -c zone_memory_cap -s pagedout -p | cut -f2);
 
 	if [[ -z "${opt_p}" ]]; then
 		cat <<-EOF
