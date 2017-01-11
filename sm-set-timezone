@@ -9,7 +9,7 @@ cat << EOF
 Usage: $0 TIMEZONE
 
 Arguments:
-    
+
     TIMEZONE         Timezone to set your VM to.
 
 EOF
@@ -42,4 +42,4 @@ mv /etc/default/init.new /etc/default/init
 rm /etc/TIMEZONE
 ln -s /etc/default/init /etc/TIMEZONE
 
-echo "* Changed to timezone to ${vm_time}.  You will need to reboot.";
+echo "* Changed timezone to ${vm_time}.  You will need to reboot.";
