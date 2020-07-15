@@ -155,7 +155,7 @@ for file in ${touch_files[@]}; do
 done
 
 # Remove this socket file explicitly:
-rm -f /.zonecontrol/metadata.sock
+rm -f /.zonecontrol/metadata.sock 2>/dev/null || true
 
 # Make sure /var/ssh exists to hold SSH host keys
 [ -d /var/ssh ] || mkdir -p /var/ssh
